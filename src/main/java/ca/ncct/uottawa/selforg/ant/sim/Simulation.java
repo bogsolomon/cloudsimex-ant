@@ -2,7 +2,6 @@ package ca.ncct.uottawa.selforg.ant.sim;
 
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
-import org.cloudbus.cloudsim.ex.MonitoringBorkerEX;
 import org.cloudbus.cloudsim.ex.disk.*;
 import org.cloudbus.cloudsim.ex.util.CustomLog;
 import org.cloudbus.cloudsim.ex.web.ILoadBalancer;
@@ -27,34 +26,64 @@ import static org.cloudbus.cloudsim.ex.web.experiments.ExperimentsUtil.HOURS;
 
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
 public class Simulation {
 
-    private static final int refreshTime = 15;
+    private static final int refreshTime = 4;
     private static DataItem data = new DataItem(5);
 
     public static void main(String[] args) throws Exception {
         Properties props = new Properties();
-        try (InputStream is = Files.newInputStream(Paths.get(args[1]))) {
+        Path basePath = Paths.get(args[0]);
+        try (InputStream is = Files.newInputStream(basePath)) {
             props.load(is);
         }
-        props.put(CustomLog.FILE_PATH_PROP_KEY, args[0]);
-        CustomLog.configLogger(props);
+
+        for (Map.Entry<Object, Object> entry : props.entrySet()) {
+            String simName = (String) entry.getKey();
+            String[] simulationFiles = ((String) entry.getValue()).split(",");
+            String cloudProperties = basePath.getParent().toString() + "/" + simulationFiles[0].trim();
+            String workloadProperties = basePath.getParent().toString() + "/" + simulationFiles[1].trim();
+            String outputProperties = basePath.getParent().toString() + "/" + simulationFiles[2].trim();
+
+            runBaseSimulation(simName, cloudProperties, workloadProperties, outputProperties);
+            // runAntSimulation(cloudProperties, workloadProperties, outputProperties);
+        }
+    }
+
+    private static void runBaseSimulation(String simName, String cloudProperties, String workloadProperties, String outputProperties) throws Exception {
+        System.err.println("Starting simulation " + simName);
+        Properties cloudProps = new Properties();
+        try (InputStream is = Files.newInputStream(Paths.get(cloudProperties))) {
+            cloudProps.load(is);
+        }
+
+        Properties workloadProps = new Properties();
+        try (InputStream is = Files.newInputStream(Paths.get(workloadProperties))) {
+            workloadProps.load(is);
+        }
+
+        Properties logProps = new Properties();
+        try (InputStream is = Files.newInputStream(Paths.get(outputProperties))) {
+            logProps.load(is);
+        }
+        CustomLog.configLogger(logProps);
 
         CloudSim.init(1, Calendar.getInstance(), false);
 
-        Datacenter datacenter0 = createDatacenter("Datacenter_0", 1);
+        Datacenter datacenter0 = createDatacenter("Datacenter_0", intfromProps(cloudProps, "hostCount"));
 
-        int refreshTime = 5;
-        WebBroker broker = new WebBroker("Broker", refreshTime, 2 * 24 * 3600, 1, 30, datacenter0.getId());
+        WebBroker broker = new WebBroker("Broker", refreshTime,
+                intfromProps(workloadProps, "simTime") * 24 * 3600, 1, 15, datacenter0.getId());
         // Step 4: Create virtual machines
-        List<Vm> vmlist = getVms(broker, 1);
+        List<Vm> vmlist = getVms(broker, intfromProps(cloudProps, "vmCount"));
 
         broker.submitVmList(vmlist);
 
-        List<StatWorkloadGenerator> workload = generateWorkloads();
+        List<StatWorkloadGenerator> workload = generateWorkloads(workloadProps);
         long appId = broker.getLoadBalancers().entrySet().iterator().next().getValue().getAppId();
         broker.addWorkloadGenerators(workload, appId);
         broker.addAutoScalingPolicy(new SimpleAutoScalingPolicy(appId, 0.8, 0.1, 150));
@@ -80,7 +109,11 @@ public class Simulation {
         }
 
         System.err.println();
-        System.err.println("Test: Simulation is finished!");
+        System.err.println("Simulation " + simName + " is finished!");
+    }
+
+    private static int intfromProps(Properties workloadProps, String propName) {
+        return Integer.parseInt(workloadProps.getProperty(propName));
     }
 
     private static List<Vm> getVms(WebBroker broker, int appServVmCount) {
@@ -97,8 +130,7 @@ public class Simulation {
         List<HddVm> appServList = new ArrayList<>();
         List<HddVm> dbServList = new ArrayList<>();
 
-        for (int i=0; i< appServVmCount ;i++)
-        {
+        for (int i = 0; i < appServVmCount; i++) {
             appServList.add(new HddVm("App-Srv", broker.getId(), mips, ioMips, pesNumber,
                     ram, bw, size, vmm, new HddCloudletSchedulerTimeShared(), new Integer[0]));
         }
@@ -144,7 +176,7 @@ public class Simulation {
                             new BwProvisionerSimple(bw), storage, peList, hddList,
                             new VmSchedulerTimeSharedOverSubscription(peList),
                             new VmDiskScheduler(hddList))
-                    );
+            );
         }
 
         // 5. Create a DatacenterCharacteristics object that stores the
@@ -174,23 +206,15 @@ public class Simulation {
         return new HddDataCenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, 0);
     }
 
-    private static List<StatWorkloadGenerator> generateWorkloads() {
+    private static List<StatWorkloadGenerator> generateWorkloads(Properties workload) {
         double nullPoint = 0;
-        String[] periods = new String[] {
-                String.format("[%d,%d] m=6 std=1", HOURS[0], HOURS[5]),
-                String.format("(%d,%d] m=20 std=2", HOURS[5], HOURS[6]),
-                String.format("(%d,%d] m=40 std=2", HOURS[6], HOURS[7]),
-                String.format("(%d,%d] m=50 std=4", HOURS[7], HOURS[8]),
-                String.format("(%d,%d] m=80 std=4", HOURS[8], HOURS[9]),
-                String.format("(%d,%d] m=100 std=5", HOURS[9], HOURS[12]),
-                String.format("(%d,%d] m=50 std=2", HOURS[12], HOURS[13]),
-                String.format("(%d,%d] m=90 std=5", HOURS[13], HOURS[14]),
-                String.format("(%d,%d] m=100 std=5", HOURS[14], HOURS[17]),
-                String.format("(%d,%d] m=80 std=2", HOURS[17], HOURS[18]),
-                String.format("(%d,%d] m=50 std=2", HOURS[18], HOURS[19]),
-                String.format("(%d,%d] m=40 std=2", HOURS[19], HOURS[20]),
-                String.format("(%d,%d] m=20 std=2", HOURS[20], HOURS[21]),
-                String.format("(%d,%d] m=6 std=1", HOURS[21], HOURS[24]) };
+        String[] periods = new String[24];
+
+        for (int i = 0; i < 24; i++)
+        {
+            periods[i] = String.format("[%d,%d] m=%d std=%d", HOURS[i], HOURS[i+1], intfromProps(workload, "m"+i)
+                    , intfromProps(workload, "std"+i));
+        }
         return generateWorkload(nullPoint, periods);
     }
 
@@ -207,9 +231,9 @@ public class Simulation {
     }
 
     private static List<StatWorkloadGenerator> generateWorkload(final double nullPoint, final String[] periods,
-                                                           final int asCloudletLength,
-                                                           final int asRam, final int dbCloudletLength, final int dbRam, final int dbCloudletIOLength,
-                                                           final int duration) {
+                                                                final int asCloudletLength,
+                                                                final int asRam, final int dbCloudletLength, final int dbRam, final int dbCloudletIOLength,
+                                                                final int duration) {
         int numberOfCloudlets = duration / refreshTime;
         numberOfCloudlets = numberOfCloudlets == 0 ? 1 : numberOfCloudlets;
 
