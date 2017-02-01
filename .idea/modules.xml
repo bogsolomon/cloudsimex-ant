@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://D://cloudsimex-ant/cloudsimex-ant.iml" filepath="D://cloudsimex-ant/cloudsimex-ant.iml" />
+      <module fileurl="file://$PROJECT_DIR$/cloudsimex-ant.iml" filepath="$PROJECT_DIR$/cloudsimex-ant.iml" />
     </modules>
   </component>
 </project>

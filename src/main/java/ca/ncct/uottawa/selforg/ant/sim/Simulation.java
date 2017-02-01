@@ -123,7 +123,7 @@ public class Simulation {
         int mips = 250;
         int ioMips = 200;
         long size = 10000; // image size (MB)
-        int ram = 512; // vm memory (MB)
+        int ram = 1024*8; // vm memory (MB)
         long bw = 1000;
         int pesNumber = 1; // number of cpus
         String vmm = "Xen"; // VMM name
@@ -167,7 +167,7 @@ public class Simulation {
         hddList.add(new HddPe(new PeProvisionerSimple(iops), data));
 
         for (int i = 0; i < hostCount; i++) {
-            int ram = 2048; // host memory (MB)
+            int ram = 1024*32; // host memory (MB)
             long storage = 1000000; // host storage
             int bw = 10000;
 
@@ -207,13 +207,15 @@ public class Simulation {
     }
 
     private static List<StatWorkloadGenerator> generateWorkloads(Properties workload) {
+        int scaleFactor = intfromProps(workload, "scaleFactor");
         double nullPoint = 0;
         String[] periods = new String[24];
 
         for (int i = 0; i < 24; i++)
         {
-            periods[i] = String.format("[%d,%d] m=%d std=%d", HOURS[i], HOURS[i+1], intfromProps(workload, "m"+i)
-                    , intfromProps(workload, "std"+i));
+            periods[i] = String.format("[%d,%d] m=%d std=%d", HOURS[i], HOURS[i + 1], scaleFactor * intfromProps(workload, "m" + i)
+                    , intfromProps(workload, "std" + i));
+            /*periods[i] = String.format("[%d,%d] m=%d std=%d", HOURS[i], HOURS[i + 1], 1, 0);*/
         }
         return generateWorkload(nullPoint, periods);
     }
