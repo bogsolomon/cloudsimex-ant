@@ -35,6 +35,9 @@ public class Ant {
             waitTime = updateTables(currentVM, newPheromone, fuzzyFactor, knownServers);
             nextNode = jumpNextNode(currentVM, knownServers);
 
+            newPheromone = Math.min(config.getMaxMorphLevel() * 1.5, newPheromone);
+            newPheromone = Math.max(0, newPheromone);
+
             return newPheromone;
         }
     }
