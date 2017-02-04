@@ -3,7 +3,6 @@ package ca.ncct.uottawa.selforg.ant.sim;
 import org.apache.commons.collections4.map.LinkedMap;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.cloudbus.cloudsim.ex.disk.HddVm;
 
 import java.util.*;
@@ -26,7 +25,7 @@ public class Ant {
     }
 
     // result is - next server id, sleep time before jumping, new pheromone level at current server
-    public Double controlStep(HddVm currentVM, Double pherLevel, Double fuzzyFactor, List<HddVm> knownServers, double timePassed) {
+    Double controlStep(HddVm currentVM, Double pherLevel, Double fuzzyFactor, List<HddVm> knownServers, double timePassed) {
         if (waitTime > 0) {
             waitTime -= timePassed;
             return null;
@@ -34,7 +33,7 @@ public class Ant {
             Double newPheromone = calculatePheromone(fuzzyFactor) + pherLevel;
             antMemory.add(Pair.of(currentVM.getId(), newPheromone));
             waitTime = updateTables(currentVM, newPheromone, fuzzyFactor, knownServers);
-            nextNode = jumpNextNode(currentVM, knownServers, newPheromone);
+            nextNode = jumpNextNode(currentVM, knownServers);
 
             return newPheromone;
         }
@@ -61,14 +60,14 @@ public class Ant {
 
         // update visit table
         visitHistory.replaceAll((k, v) -> {
-            if (k.equals(currentVM.getId())) {
+            if (k.equals(currentVM)) {
                 return Pair.of(0, newPheromoneValue);
             } else {
                 return Pair.of(waitTime.intValue(), v.getRight());
             }
         });
 
-        List<HddVm> unknown = knownServers.stream().filter(server -> !visitHistory.containsKey(server.getId())).
+        List<HddVm> unknown = knownServers.stream().filter(server -> !visitHistory.containsKey(server)).
                 collect(Collectors.toList());
 
         int nextWait;
@@ -89,7 +88,7 @@ public class Ant {
         return waitTime.intValue();
     }
 
-    private HddVm jumpNextNode(HddVm currentVM, List<HddVm> knownServers, Double newPheromoneValue) {
+    private HddVm jumpNextNode(HddVm currentVM, List<HddVm> knownServers) {
         Random rand = new Random();
         int sumOfTimes = 0;
         Double sumOfPheromones = 0d;
@@ -142,11 +141,11 @@ public class Ant {
         return probTable.lastKey();
     }
 
-    public HddVm getNextNode() {
+    HddVm getNextNode() {
         return nextNode;
     }
 
-    public Morph morph() {
+    Morph morph() {
         Double sum = antMemory.stream().mapToDouble(Pair::getRight).sum();
 
         if ((sum / antMemory.size()) < config.getMinMorphLevel()) {

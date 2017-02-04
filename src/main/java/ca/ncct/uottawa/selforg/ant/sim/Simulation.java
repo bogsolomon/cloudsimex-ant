@@ -84,7 +84,7 @@ public class Simulation {
         Datacenter datacenter0 = createDatacenter("Datacenter_0", intfromProps(cloudProps, "hostCount"));
 
         WebBroker broker = new WebBroker("Broker", refreshTime,
-                intfromProps(workloadProps, "simTime") * 24 * 3600, 1, 15, datacenter0.getId());
+                intfromProps(workloadProps, "simTime") * 24 * 3600, 1, 5, datacenter0.getId());
         // Step 4: Create virtual machines
         List<Vm> vmlist = getVms(broker, intfromProps(cloudProps, "vmCount"));
 

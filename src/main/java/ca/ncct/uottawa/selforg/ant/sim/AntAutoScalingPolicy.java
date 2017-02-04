@@ -74,10 +74,12 @@ public class AntAutoScalingPolicy implements IAutoscalingPolicy {
 
                 antToServer.putAll(updatedMoves);
 
-                if (nextDecay < 0) {
+                if (nextDecay <= currentTime) {
                     pherLevels.replaceAll((k, v) -> v - config.getDecayAmount());
                     nextDecay = currentTime + config.getDecayRate();
                 }
+
+                pherLevels.forEach((k, v) -> debugSB.append(k.getId()).append('=').append(v).append("; "));
 
                 if (maxMorphCount > noMorphCount + minMorphCount) {
                     CustomLog.printf("Ant-Autoscale(%s) would add servers: %s", new Object[]{broker, this.debugSB});
@@ -86,8 +88,6 @@ public class AntAutoScalingPolicy implements IAutoscalingPolicy {
                 } else {
                     CustomLog.printf("Ant-Autoscale(%s) no change: %s", new Object[]{broker, this.debugSB});
                 }
-
-                nextDecay = nextDecay - diffTime;
             }
         }
 
