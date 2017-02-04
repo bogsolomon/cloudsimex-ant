@@ -48,13 +48,15 @@ public class Simulation {
             String cloudProperties = basePath.getParent().toString() + "/" + simulationFiles[0].trim();
             String workloadProperties = basePath.getParent().toString() + "/" + simulationFiles[1].trim();
             String outputProperties = basePath.getParent().toString() + "/" + simulationFiles[2].trim();
+            String antProperties = basePath.getParent().toString() + "/" + simulationFiles[3].trim();
 
-            runBaseSimulation(simName, cloudProperties, workloadProperties, outputProperties);
+            runBaseSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties);
             // runAntSimulation(cloudProperties, workloadProperties, outputProperties);
         }
     }
 
-    private static void runBaseSimulation(String simName, String cloudProperties, String workloadProperties, String outputProperties) throws Exception {
+    private static void runBaseSimulation(String simName, String cloudProperties, String workloadProperties,
+                                          String outputProperties, String antProperties) throws Exception {
         System.err.println("Starting simulation " + simName);
         Properties cloudProps = new Properties();
         try (InputStream is = Files.newInputStream(Paths.get(cloudProperties))) {
@@ -64,6 +66,11 @@ public class Simulation {
         Properties workloadProps = new Properties();
         try (InputStream is = Files.newInputStream(Paths.get(workloadProperties))) {
             workloadProps.load(is);
+        }
+
+        Properties antProps = new Properties();
+        try (InputStream is = Files.newInputStream(Paths.get(antProperties))) {
+            antProps.load(is);
         }
 
         Properties logProps = new Properties();
@@ -86,7 +93,8 @@ public class Simulation {
         List<StatWorkloadGenerator> workload = generateWorkloads(workloadProps);
         long appId = broker.getLoadBalancers().entrySet().iterator().next().getValue().getAppId();
         broker.addWorkloadGenerators(workload, appId);
-        broker.addAutoScalingPolicy(new SimpleAutoScalingPolicy(appId, 0.8, 0.1, 150));
+        // broker.addAutoScalingPolicy(new SimpleAutoScalingPolicy(appId, 0.8, 0.1, 150));
+        broker.addAutoScalingPolicy(new AntAutoScalingPolicy(antProps, appId));
         broker.recordUtilisationPeriodically(15);
 
         CloudSim.startSimulation();

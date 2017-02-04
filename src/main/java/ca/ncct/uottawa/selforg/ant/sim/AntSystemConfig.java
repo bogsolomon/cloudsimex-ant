@@ -13,8 +13,8 @@ public class AntSystemConfig {
     private final int antPheromone;
     private final int antHistorySize;
     private final int maxMorphLevel;
-    private final int maxBalanceLevel;
-    private final int minBalanceLevel;
+    private final double maxBalanceLevel;
+    private final double minBalanceLevel;
 
     public AntSystemConfig(Properties props) {
         decayAmount = Integer.parseInt(props.getProperty("decayAmount"));
@@ -24,8 +24,8 @@ public class AntSystemConfig {
         antHistorySize = Integer.parseInt(props.getProperty("antHistorySize"));
         maxMorphLevel = Integer.parseInt(props.getProperty("maxMorphLevel"));
         minMorphLevel = Integer.parseInt(props.getProperty("minMorphLevel"));
-        maxBalanceLevel = Integer.parseInt(props.getProperty("maxBalanceLevel"));
-        minBalanceLevel = Integer.parseInt(props.getProperty("minBalanceLevel"));
+        maxBalanceLevel = Double.parseDouble(props.getProperty("maxBalanceLevel"));
+        minBalanceLevel = Double.parseDouble(props.getProperty("minBalanceLevel"));
     }
 
     public int getDecayAmount() {
@@ -56,11 +56,11 @@ public class AntSystemConfig {
         return maxMorphLevel;
     }
 
-    public int getMaxBalanceLevel() {
+    public double getMaxBalanceLevel() {
         return maxBalanceLevel;
     }
 
-    public int getMinBalanceLevel() {
+    public double getMinBalanceLevel() {
         return minBalanceLevel;
     }
 }

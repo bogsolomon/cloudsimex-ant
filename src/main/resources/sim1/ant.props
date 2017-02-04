@@ -1,0 +1,9 @@
+decayAmount=1
+decayRate=15
+antWaitTime=15
+antPheromone=4
+antHistorySize=5
+maxMorphLevel=100
+minMorphLevel=25
+maxBalanceLevel=0.55
+minBalanceLevel=0.45
