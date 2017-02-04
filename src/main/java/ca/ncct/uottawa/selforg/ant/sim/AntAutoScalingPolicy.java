@@ -19,9 +19,11 @@ public class AntAutoScalingPolicy implements IAutoscalingPolicy {
     Map<Ant, HddVm> antToServer = new HashMap<>();
     private StringBuilder debugSB = new StringBuilder();
     private long appId;
+    private AntSystemConfig config = null;
 
     public AntAutoScalingPolicy(Properties antControlProps, long appId) {
         this.appId = appId;
+        this.config = new AntSystemConfig(antControlProps);
     }
 
     @Override
@@ -37,6 +39,13 @@ public class AntAutoScalingPolicy implements IAutoscalingPolicy {
             if (antToServer.isEmpty()) {
                 initializeAnts(appServers);
             }
+        }
+    }
+
+    private void initializeAnts(List<HddVm> appServers) {
+        for (HddVm vm : appServers) {
+            Ant ant = new Ant(appServers, vm.getId(), config);
+            antToServer.put(ant, vm);
         }
     }
 }
