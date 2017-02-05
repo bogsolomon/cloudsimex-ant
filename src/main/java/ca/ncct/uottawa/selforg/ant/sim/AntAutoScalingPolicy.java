@@ -3,6 +3,7 @@ package ca.ncct.uottawa.selforg.ant.sim;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.ex.IAutoscalingPolicy;
 import org.cloudbus.cloudsim.ex.MonitoringBorkerEX;
+import org.cloudbus.cloudsim.ex.disk.HddCloudletSchedulerTimeShared;
 import org.cloudbus.cloudsim.ex.disk.HddVm;
 import org.cloudbus.cloudsim.ex.util.CustomLog;
 import org.cloudbus.cloudsim.ex.vm.VMStatus;
@@ -16,8 +17,8 @@ import java.util.*;
  */
 public class AntAutoScalingPolicy implements IAutoscalingPolicy {
 
-    Map<Ant, HddVm> antToServer = new HashMap<>();
-    Map<HddVm, Double> pherLevels = new HashMap<>();
+    private Map<Ant, HddVm> antToServer = new HashMap<>();
+    private Map<HddVm, Double> pherLevels = new HashMap<>();
     private StringBuilder debugSB = new StringBuilder();
     private long appId;
     private AntSystemConfig config = null;
@@ -80,16 +81,86 @@ public class AntAutoScalingPolicy implements IAutoscalingPolicy {
                 pherLevels.forEach((k, v) -> debugSB.append(k.getId()).append('=').append(v).append("; "));
 
                 if (maxMorphCount > noMorphCount + minMorphCount) {
-                    CustomLog.printf("Ant-Autoscale(%s) would add servers: %s", new Object[]{broker, this.debugSB});
+                    CustomLog.printf("Ant-Autoscale(%s) would add servers: %s", broker, this.debugSB);
+                    addServers(1, loadBalancer, webBroker);
                 } else if (minMorphCount > noMorphCount + maxMorphCount) {
-                    CustomLog.printf("Ant-Autoscale(%s) would remove servers: %s", new Object[]{broker, this.debugSB});
+                    CustomLog.printf("Ant-Autoscale(%s) would remove servers: %s", broker, this.debugSB);
+                    if (antToServer.size() > 1) {
+                        removeServers(1, loadBalancer, webBroker);
+                    }
                 } else {
-                    CustomLog.printf("Ant-Autoscale(%s) no change: %s", new Object[]{broker, this.debugSB});
+                    CustomLog.printf("Ant-Autoscale(%s) no change: %s", broker, this.debugSB);
                 }
             }
         }
 
         lastTime = currentTime;
+    }
+
+    private void removeServers(int removeCount, ILoadBalancer loadBalancer, WebBroker webBroker) {
+        List<HddVm> removeServers = new ArrayList<>();
+        for (int i = 0; i < removeCount; i++) {
+            for (HddVm vm : loadBalancer.getAppServers()) {
+                if (EnumSet.of(VMStatus.INITIALISING, VMStatus.RUNNING).contains(vm.getStatus()) && !removeServers.contains(vm)) {
+                    removeServers.add(vm);
+                    break;
+                }
+            }
+        }
+        webBroker.destroyVMsAfter(removeServers, 0.0D);
+        loadBalancer.getAppServers().removeAll(removeServers);
+        removeAnts(removeServers);
+    }
+
+    private void removeAnts(List<HddVm> removeServers) {
+        int removeCount = removeServers.size();
+        List<Ant> antsToRemove = new ArrayList<>();
+
+        for (Ant ant : antToServer.keySet()) {
+            if (removeServers.contains(antToServer.get(ant)) && removeCount > 0) {
+                antsToRemove.add(ant);
+                removeCount--;
+            }
+        }
+
+        for (Ant ant : antsToRemove) {
+            antToServer.remove(ant);
+        }
+
+        for (HddVm vm : removeServers) {
+            pherLevels.remove(vm);
+        }
+
+        // we need to reassign ants which were on removed servers
+        int remaingSize = pherLevels.keySet().size();
+        Random rand = new Random();
+        for (Ant ant : antToServer.keySet()) {
+            if (!pherLevels.keySet().contains(antToServer.get(ant))) {
+                int count = rand.nextInt(remaingSize);
+                Iterator<HddVm> iter = pherLevels.keySet().iterator();
+                while (count > 0) {
+                    iter.next();
+                    count--;
+                }
+                antToServer.put(ant, iter.next());
+            }
+        }
+
+        antToServer.forEach((k, v) -> k.reinit());
+        pherLevels.replaceAll((key, oldValue) -> ((double) config.getMaxMorphLevel() + config.getMinMorphLevel()) / 2);
+    }
+
+    private void addServers(int addCount, ILoadBalancer loadBalancer, WebBroker webBroker) {
+        List<HddVm> newServers = new ArrayList<>();
+        for (int i = 0; i < addCount; i++) {
+            HddVm newServ = loadBalancer.getAppServers().get(0).clone(new HddCloudletSchedulerTimeShared());
+            loadBalancer.registerAppServer(newServ);
+            newServers.add(newServ);
+        }
+        webBroker.createVmsAfter(newServers, 0.0D);
+        initializeAnts(newServers);
+        antToServer.forEach((k, v) -> k.reinit());
+        pherLevels.replaceAll((key, oldValue) -> ((double) config.getMaxMorphLevel() + config.getMinMorphLevel()) / 2);
     }
 
     private void initializeAnts(List<HddVm> appServers) {

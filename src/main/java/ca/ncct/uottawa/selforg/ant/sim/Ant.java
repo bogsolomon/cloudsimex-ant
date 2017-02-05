@@ -159,4 +159,8 @@ public class Ant {
             return Morph.NoMorph;
         }
     }
+
+    public void reinit() {
+        antMemory.clear();
+    }
 }
