@@ -53,7 +53,8 @@ public class AntAutoScalingPolicy implements IAutoscalingPolicy {
 
                 for (Ant ant : antToServer.keySet()) {
                     HddVm currServer = antToServer.get(ant);
-                    Double newPher = ant.controlStep(currServer, pherLevels.get(currServer), currServer.getCPUUtil(), appServers, diffTime);
+                    Double newPher = ant.controlStep(currServer, pherLevels.get(currServer),
+                            Math.min(currServer.getCPUUtil(), 1d), appServers, diffTime);
                     if (newPher != null) {
                         pherLevels.put(currServer, newPher);
                         updatedMoves.put(ant, ant.getNextNode());
@@ -74,23 +75,23 @@ public class AntAutoScalingPolicy implements IAutoscalingPolicy {
                 antToServer.putAll(updatedMoves);
 
                 if (nextDecay <= currentTime) {
-                    pherLevels.replaceAll((k, v) -> v - config.getDecayAmount());
+                    pherLevels.replaceAll((k, v) -> Math.max(0, v - config.getDecayAmount()));
                     nextDecay = currentTime + config.getDecayRate();
                 }
 
                 pherLevels.forEach((k, v) -> debugSB.append(k.getId()).append('=').append(v).append("; "));
 
                 if (maxMorphCount > noMorphCount + minMorphCount) {
-                    CustomLog.printf("Ant-Autoscale(%s) would add servers: %s", broker, this.debugSB);
+                    CustomLog.printf("Ant-Autoscale(%s) adding servers: %s", broker, this.debugSB);
                     addServers(1, loadBalancer, webBroker);
                 } else if (minMorphCount > noMorphCount + maxMorphCount) {
-                    CustomLog.printf("Ant-Autoscale(%s) would remove servers: %s", broker, this.debugSB);
                     if (antToServer.size() > 1) {
+                        CustomLog.printf("Ant-Autoscale(%s) removing servers: %s", broker, this.debugSB);
                         removeServers(1, loadBalancer, webBroker);
                     }
-                } else {
+                } /*else {
                     CustomLog.printf("Ant-Autoscale(%s) no change: %s", broker, this.debugSB);
-                }
+                }*/
             }
         }
 
@@ -109,7 +110,8 @@ public class AntAutoScalingPolicy implements IAutoscalingPolicy {
         }
         webBroker.destroyVMsAfter(removeServers, 0.0D);
         loadBalancer.getAppServers().removeAll(removeServers);
-        removeAnts(removeServers);
+        antToServer.clear();
+        pherLevels.clear();
     }
 
     private void removeAnts(List<HddVm> removeServers) {
@@ -145,9 +147,6 @@ public class AntAutoScalingPolicy implements IAutoscalingPolicy {
                 antToServer.put(ant, iter.next());
             }
         }
-
-        antToServer.forEach((k, v) -> k.reinit());
-        pherLevels.replaceAll((key, oldValue) -> ((double) config.getMaxMorphLevel() + config.getMinMorphLevel()) / 2);
     }
 
     private void addServers(int addCount, ILoadBalancer loadBalancer, WebBroker webBroker) {
@@ -158,9 +157,8 @@ public class AntAutoScalingPolicy implements IAutoscalingPolicy {
             newServers.add(newServ);
         }
         webBroker.createVmsAfter(newServers, 0.0D);
-        initializeAnts(newServers);
-        antToServer.forEach((k, v) -> k.reinit());
-        pherLevels.replaceAll((key, oldValue) -> ((double) config.getMaxMorphLevel() + config.getMinMorphLevel()) / 2);
+        antToServer.clear();
+        pherLevels.clear();
     }
 
     private void initializeAnts(List<HddVm> appServers) {

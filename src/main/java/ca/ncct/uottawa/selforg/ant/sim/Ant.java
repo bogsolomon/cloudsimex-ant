@@ -66,7 +66,7 @@ public class Ant {
             if (k.equals(currentVM)) {
                 return Pair.of(0, newPheromoneValue);
             } else {
-                return Pair.of(waitTime.intValue(), v.getRight());
+                return Pair.of(v.getLeft() + waitTime.intValue(), v.getRight());
             }
         });
 

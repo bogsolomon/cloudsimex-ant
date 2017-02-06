@@ -1,7 +1,9 @@
 package ca.ncct.uottawa.selforg.ant.sim;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
+import org.cloudbus.cloudsim.ex.IAutoscalingPolicy;
 import org.cloudbus.cloudsim.ex.disk.*;
 import org.cloudbus.cloudsim.ex.util.CustomLog;
 import org.cloudbus.cloudsim.ex.web.ILoadBalancer;
@@ -29,11 +31,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Function;
 
 public class Simulation {
 
     private static final int refreshTime = 4;
     private static DataItem data = new DataItem(5);
+
+    private static Function<Pair<Long, Properties>, IAutoscalingPolicy> supplierSimple = uid -> new SimpleAutoScalingPolicy(uid.getLeft(), 0.8, 0.1, 150);
+    private static Function<Pair<Long, Properties>, IAutoscalingPolicy> supplierAnt = uid -> new AntAutoScalingPolicy(uid.getRight(), uid.getLeft());
 
     public static void main(String[] args) throws Exception {
         Properties props = new Properties();
@@ -50,13 +56,17 @@ public class Simulation {
             String outputProperties = basePath.getParent().toString() + "/" + simulationFiles[2].trim();
             String antProperties = basePath.getParent().toString() + "/" + simulationFiles[3].trim();
 
-            runBaseSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties);
-            // runAntSimulation(cloudProperties, workloadProperties, outputProperties);
+            runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimple, "base");
+            runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierAnt, "ant");
         }
     }
 
-    private static void runBaseSimulation(String simName, String cloudProperties, String workloadProperties,
-                                          String outputProperties, String antProperties) throws Exception {
+    //private Function<Integer, IAutoscalingPolicy> supplierAnt = uid -> new AntAutoScalingPolicy(antProps, uid);
+
+    private static void runSimulation(String simName, String cloudProperties, String workloadProperties,
+                                      String outputProperties, String antProperties,
+                                      Function<Pair<Long, Properties>, IAutoscalingPolicy> scalingPolicy,
+                                      String type) throws Exception {
         System.err.println("Starting simulation " + simName);
         Properties cloudProps = new Properties();
         try (InputStream is = Files.newInputStream(Paths.get(cloudProperties))) {
@@ -77,6 +87,7 @@ public class Simulation {
         try (InputStream is = Files.newInputStream(Paths.get(outputProperties))) {
             logProps.load(is);
         }
+        logProps.setProperty("FilePath", logProps.getProperty("FilePath")+"-"+type+".log");
         CustomLog.configLogger(logProps);
 
         CloudSim.init(1, Calendar.getInstance(), false);
@@ -93,8 +104,7 @@ public class Simulation {
         List<StatWorkloadGenerator> workload = generateWorkloads(workloadProps);
         long appId = broker.getLoadBalancers().entrySet().iterator().next().getValue().getAppId();
         broker.addWorkloadGenerators(workload, appId);
-        // broker.addAutoScalingPolicy(new SimpleAutoScalingPolicy(appId, 0.8, 0.1, 150));
-        broker.addAutoScalingPolicy(new AntAutoScalingPolicy(antProps, appId));
+        broker.addAutoScalingPolicy(scalingPolicy.apply(Pair.of(appId, antProps)));
         broker.recordUtilisationPeriodically(15);
 
         CloudSim.startSimulation();
