@@ -12,10 +12,7 @@ import org.cloudbus.cloudsim.ex.web.workload.brokers.WebBroker;
 
 import java.util.*;
 
-/**
- * Created by Bogdan on 1/31/2017.
- */
-public class AntAutoScalingPolicy implements IAutoscalingPolicy {
+class AntAutoScalingPolicy implements IAutoscalingPolicy {
 
     private Map<Ant, HddVm> antToServer = new HashMap<>();
     private Map<HddVm, Double> pherLevels = new HashMap<>();
@@ -24,10 +21,12 @@ public class AntAutoScalingPolicy implements IAutoscalingPolicy {
     private AntSystemConfig config = null;
     private double lastTime = 0;
     private double nextDecay = 0;
+    private IAntOptimizer optimizer;
 
-    public AntAutoScalingPolicy(Properties antControlProps, long appId) {
+    AntAutoScalingPolicy(Properties antControlProps, long appId, IAntOptimizer optimizer) {
         this.appId = appId;
         this.config = new AntSystemConfig(antControlProps);
+        this.optimizer = optimizer;
     }
 
     @Override
@@ -83,11 +82,11 @@ public class AntAutoScalingPolicy implements IAutoscalingPolicy {
 
                 if (maxMorphCount > noMorphCount + minMorphCount) {
                     CustomLog.printf("Ant-Autoscale(%s) adding servers: %s", broker, this.debugSB);
-                    addServers(1, loadBalancer, webBroker);
+                    addServers(optimizer.getAddServers(), loadBalancer, webBroker);
                 } else if (minMorphCount > noMorphCount + maxMorphCount) {
                     if (antToServer.size() > 1) {
                         CustomLog.printf("Ant-Autoscale(%s) removing servers: %s", broker, this.debugSB);
-                        removeServers(1, loadBalancer, webBroker);
+                        removeServers(optimizer.getRemoveServers(), loadBalancer, webBroker);
                     }
                 } /*else {
                     CustomLog.printf("Ant-Autoscale(%s) no change: %s", broker, this.debugSB);
@@ -114,7 +113,7 @@ public class AntAutoScalingPolicy implements IAutoscalingPolicy {
         pherLevels.clear();
     }
 
-    private void removeAnts(List<HddVm> removeServers) {
+    /*private void removeAnts(List<HddVm> removeServers) {
         int removeCount = removeServers.size();
         List<Ant> antsToRemove = new ArrayList<>();
 
@@ -147,7 +146,7 @@ public class AntAutoScalingPolicy implements IAutoscalingPolicy {
                 antToServer.put(ant, iter.next());
             }
         }
-    }
+    }*/
 
     private void addServers(int addCount, ILoadBalancer loadBalancer, WebBroker webBroker) {
         List<HddVm> newServers = new ArrayList<>();

@@ -39,7 +39,7 @@ public class Simulation {
     private static DataItem data = new DataItem(5);
 
     private static Function<Pair<Long, Properties>, IAutoscalingPolicy> supplierSimple = uid -> new SimpleAutoScalingPolicy(uid.getLeft(), 0.8, 0.1, 150);
-    private static Function<Pair<Long, Properties>, IAutoscalingPolicy> supplierAnt = uid -> new AntAutoScalingPolicy(uid.getRight(), uid.getLeft());
+    private static Function<Pair<Long, Properties>, IAutoscalingPolicy> supplierAnt = uid -> new AntAutoScalingPolicy(uid.getRight(), uid.getLeft(), new SimpleAntOptimizer());
 
     public static void main(String[] args) throws Exception {
         Properties props = new Properties();
