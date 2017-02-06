@@ -22,6 +22,9 @@ class AntAutoScalingPolicy implements IAutoscalingPolicy {
     private double lastTime = 0;
     private double nextDecay = 0;
     private IAntOptimizer optimizer;
+    private double nextLog = 0;
+
+    private static final int LOG_RATE = 60;
 
     AntAutoScalingPolicy(Properties antControlProps, long appId, IAntOptimizer optimizer) {
         this.appId = appId;
@@ -80,8 +83,14 @@ class AntAutoScalingPolicy implements IAutoscalingPolicy {
 
                 pherLevels.forEach((k, v) -> debugSB.append(k.getId()).append('=').append(v).append("; "));
 
+                if (nextLog <= currentTime) {
+                    CustomLog.printf("Ant-Autoscale(%s) pheromone levels: %s", broker, this.debugSB);
+                    nextLog = currentTime + LOG_RATE;
+                }
+
                 if (maxMorphCount > noMorphCount + minMorphCount) {
                     CustomLog.printf("Ant-Autoscale(%s) adding servers: %s", broker, this.debugSB);
+                    optimizer.setAnts(antToServer.keySet());
                     addServers(optimizer.getAddServers(), loadBalancer, webBroker);
                 } else if (minMorphCount > noMorphCount + maxMorphCount) {
                     if (antToServer.size() > 1) {
