@@ -160,7 +160,11 @@ public class Ant {
         }
     }
 
-    public void reinit() {
-        antMemory.clear();
+    public Double evaluateFitness(HHAntOptimizer.Nest nest) {
+
     }
+
+    /*public void reinit() {
+        antMemory.clear();
+    }*/
 }
