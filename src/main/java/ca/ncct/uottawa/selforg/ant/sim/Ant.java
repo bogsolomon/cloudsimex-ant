@@ -160,8 +160,12 @@ public class Ant {
         }
     }
 
-    public Double evaluateFitness(HHAntOptimizer.Nest nest) {
+    Double evaluateFitness(HHAntOptimizer.Nest nest) {
 
+    }
+
+    double getAveragePheromone() {
+        return antMemory.stream().mapToDouble(Pair::getValue).sum()/antMemory.size();
     }
 
     /*public void reinit() {
