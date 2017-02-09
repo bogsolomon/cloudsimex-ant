@@ -160,8 +160,43 @@ public class Ant {
         }
     }
 
-    Double evaluateFitness(HHAntOptimizer.Nest nest) {
+    Double evaluateFitness(HHAntOptimizer.Nest nest, int originalSize, double maxPher, double optimalPher) {
+        double scaleFactor = nest.getServerCount() / (double) originalSize;
 
+
+        if (scaleFactor < 1) {
+            // server removal case
+            int scaledRemainingServers = Double.valueOf(antMemory.size() * scaleFactor).intValue();
+
+            double remainingPher = 0;
+            double removePher = 0;
+
+            for (int i = 0; i < scaledRemainingServers; i++) {
+                remainingPher += antMemory.get(i).getRight();
+            }
+            for (int i = scaledRemainingServers; i < antMemory.size(); i++) {
+                removePher += antMemory.get(i).getRight();
+            }
+
+            avgPher = remainingPher / (remainingPher + removePher);
+        } else {
+            // server addition
+            int scaledAddedServers = Double.valueOf(antMemory.size() * scaleFactor).intValue();
+
+            double totalPher = 0;
+            double addPher = 0;
+
+            for (int i = 0; i < antMemory.size(); i++) {
+                totalPher += antMemory.get(i).getRight();
+            }
+            for (int i = antMemory.size(); i < scaledAddedServers; i++) {
+                addPher += maxPher;
+            }
+
+            avgPher = (totalPher + addPher) / scaledAddedServers;
+        }
+
+        return 1 - ((optimalPher - avgPher) / optimalPher);
     }
 
     double getAveragePheromone() {
