@@ -163,6 +163,7 @@ public class Ant {
     Double evaluateFitness(HHAntOptimizer.Nest nest, int originalSize, double maxPher, double optimalPher) {
         double scaleFactor = nest.getServerCount() / (double) originalSize;
 
+        double avgPher;
 
         if (scaleFactor < 1) {
             // server removal case

@@ -11,14 +11,16 @@ public class HHAntOptimizer implements IAntOptimizer {
     private Map<Ant, Nest> antToNest = new HashMap<>();
     private Random random = new Random();
     private Double maxPher = null;
+    private Double optPher = null;
 
     /*private Function<Integer, Integer> addFunction = x -> x + Math.max(1, random.nextInt(x));
     private Function<Integer, Integer> removeFunction = x -> x - Math.min(x - 1, Math.max(1, random.nextInt(x)));*/
     private Function<Pair<Integer, Double>, Integer> combinedFunction = x -> new Double(x.getLeft() / 2d * random.nextInt() +
             x.getLeft() / 2d * Math.abs(x.getRight() - maxPher) / maxPher).intValue();
 
-    public void setMaxPheromone(Double maxPher) {
+    public void setPheromones(Double maxPher, Double minPher) {
         this.maxPher = maxPher;
+        this.optPher = (maxPher + minPher) / 2;
     }
 
     public void setAnts(Set<Ant> ants) {
@@ -35,9 +37,11 @@ public class HHAntOptimizer implements IAntOptimizer {
             return antToNest.get(ants.iterator().next()).getServerCount();
         }
 
+        int originalSize = antToNest.size();
+
         for (Ant ant : antToNest.keySet()) {
             Nest nest = antToNest.get(ant);
-            nest.getFitness().put(ant, ant.evaluateFitness(nest));
+            nest.getFitness().put(ant, ant.evaluateFitness(nest, originalSize, maxPher, optPher));
         }
     }
 
