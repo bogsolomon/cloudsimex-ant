@@ -43,6 +43,8 @@ public class HHAntOptimizer implements IAntOptimizer {
             Nest nest = antToNest.get(ant);
             nest.getFitness().put(ant, ant.evaluateFitness(nest, originalSize, maxPher, optPher));
         }
+
+
     }
 
     @Override

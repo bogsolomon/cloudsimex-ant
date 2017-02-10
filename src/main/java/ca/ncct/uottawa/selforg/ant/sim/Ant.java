@@ -169,7 +169,7 @@ public class Ant {
             // server removal case
             int scaledRemainingServers = Double.valueOf(antMemory.size() * scaleFactor).intValue();
 
-            double removePher = 0;
+            double remainingPher = 0;
 
             for (int i = 0; i < scaledRemainingServers; i++) {
                 remainingPher += antMemory.get(i).getRight();
@@ -178,16 +178,17 @@ public class Ant {
             avgPher = remainingPher / antMemory.size();
         } else {
             // server addition
-            int scaledAddedServers = Double.valueOf(antMemory.size() * scaleFactor).intValue();
+            double scaledAddedServers = (nest.getServerCount() - (double) originalSize) / nest.getServerCount();
+            int scaledBackHistory = Double.valueOf(scaledAddedServers * antMemory.size()).intValue();
 
             double totalPher = 0;
             double addPher = 0;
 
-            for (int i = 0; i < antMemory.size(); i++) {
-                totalPher += antMemory.get(i).getRight();
-            }
-            for (int i = antMemory.size(); i < scaledAddedServers; i++) {
+            for (int i = 0; i < scaledBackHistory; i++) {
                 addPher += optimalPher;
+            }
+            for (int i = scaledBackHistory; i < antMemory.size(); i++) {
+                totalPher += antMemory.get(i).getRight();
             }
 
             avgPher = (totalPher + addPher) / scaledAddedServers;
