@@ -1,5 +1,7 @@
 package ca.ncct.uottawa.selforg.ant.sim;
 
+import com.google.common.base.Functions;
+import com.google.common.collect.Ordering;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
@@ -8,7 +10,7 @@ import java.util.function.Function;
 public class HHAntOptimizer implements IAntOptimizer {
 
     private Set<Ant> ants = new HashSet<>();
-    private Map<Ant, Nest> antToNest = new HashMap<>();
+    private TreeMap<Ant, Nest> antToNest = new ValueComparableMap<>(Ordering.from(new NestComparator()));
     private Random random = new Random();
     private Double maxPher = null;
     private Double optPher = null;
@@ -44,7 +46,10 @@ public class HHAntOptimizer implements IAntOptimizer {
             nest.getFitness().put(ant, ant.evaluateFitness(nest, originalSize, maxPher, optPher));
         }
 
+        recruitmentPhase();
+    }
 
+    private void recruitmentPhase() {
     }
 
     @Override
@@ -73,6 +78,40 @@ public class HHAntOptimizer implements IAntOptimizer {
 
         Map<Ant, Double> getFitness() {
             return fitness;
+        }
+    }
+
+    class ValueComparableMap<K extends Comparable<K>, V> extends TreeMap<K, V> {
+        //A map for doing lookups on the keys for comparison so we don't get infinite loops
+        private final Map<K, V> valueMap;
+
+        ValueComparableMap(final Ordering<? super V> partialValueOrdering) {
+            this(partialValueOrdering, new HashMap<K, V>());
+        }
+
+        private ValueComparableMap(Ordering<? super V> partialValueOrdering,
+                                   HashMap<K, V> valueMap) {
+            super(partialValueOrdering //Apply the value ordering
+                    .onResultOf(Functions.forMap(valueMap)) //On the result of getting the value for the key from the map
+                    .compound(Ordering.natural())); //as well as ensuring that the keys don't get clobbered
+            this.valueMap = valueMap;
+        }
+
+        public V put(K k, V v) {
+            if (valueMap.containsKey(k)) {
+                //remove the key in the sorted set before adding the key again
+                remove(k);
+            }
+            valueMap.put(k, v); //To get "real" unsorted values for the comparator
+            return super.put(k, v); //Put it in value order
+        }
+    }
+
+    class NestComparator implements Comparator<Nest> {
+
+        @Override
+        public int compare(Nest o1, Nest o2) {
+            return o1.getFitness();
         }
     }
 }

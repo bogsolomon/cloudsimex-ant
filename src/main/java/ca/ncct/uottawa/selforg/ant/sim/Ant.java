@@ -8,7 +8,7 @@ import org.cloudbus.cloudsim.ex.disk.HddVm;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Ant {
+public class Ant implements Comparable<Ant> {
 
     //contains server id, time since visit, pheromone level
     private final CircularFifoQueue<Pair<Integer, Double>> antMemory;
@@ -199,6 +199,11 @@ public class Ant {
 
     double getAveragePheromone() {
         return antMemory.stream().mapToDouble(Pair::getValue).sum()/antMemory.size();
+    }
+
+    @Override
+    public int compareTo(Ant o) {
+        return uid - o.uid;
     }
 
     /*public void reinit() {
