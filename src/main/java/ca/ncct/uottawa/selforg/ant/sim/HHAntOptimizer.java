@@ -50,6 +50,39 @@ public class HHAntOptimizer implements IAntOptimizer {
     }
 
     private void recruitmentPhase() {
+        List<Pair<Ant, Ant>> recruitmentAnts = new ArrayList<>();
+
+        while (!antToNest.isEmpty()) {
+            double rand = random.nextDouble();
+            rand = Math.pow(rand, 0.5);
+            int recruitIndex = (int) Math.floor(rand * (antToNest.size() + 1));
+
+            rand = random.nextDouble();
+            rand = Math.pow(rand, 2.0);
+            int recruitedIndex = (int) Math.floor(rand * (antToNest.size() + 1));
+
+            Ant recruiter = null;
+            Ant recruited = null;
+
+            int idx = 0;
+            for (Ant ant: antToNest.keySet()) {
+                if (idx == recruitIndex) {
+                    recruiter = ant;
+                }
+                if (idx == recruitedIndex) {
+                    recruited = ant;
+                }
+                if (recruiter != null && recruited != null) {
+                    break;
+                }
+                idx++;
+            }
+
+            recruitmentAnts.add(Pair.of(recruiter, recruited));
+            antToNest.remove(recruiter);
+            antToNest.remove(recruited);
+        }
+
     }
 
     @Override
@@ -78,6 +111,10 @@ public class HHAntOptimizer implements IAntOptimizer {
 
         Map<Ant, Double> getFitness() {
             return fitness;
+        }
+
+        double getAverageFitness() {
+            return fitness.values().stream().mapToDouble(x -> x).sum();
         }
     }
 
@@ -111,7 +148,7 @@ public class HHAntOptimizer implements IAntOptimizer {
 
         @Override
         public int compare(Nest o1, Nest o2) {
-            return o1.getFitness();
+            return (int) Math.signum(o1.getAverageFitness() - o2.getAverageFitness());
         }
     }
 }
