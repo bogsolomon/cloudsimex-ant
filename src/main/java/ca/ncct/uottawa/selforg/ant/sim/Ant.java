@@ -1,7 +1,6 @@
 package ca.ncct.uottawa.selforg.ant.sim;
 
 import org.apache.commons.collections4.map.LinkedMap;
-import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.cloudbus.cloudsim.ex.disk.HddVm;
 
@@ -11,7 +10,7 @@ import java.util.stream.Collectors;
 public class Ant implements Comparable<Ant> {
 
     //contains server id, time since visit, pheromone level
-    private final CircularFifoQueue<Pair<Integer, Double>> antMemory;
+    private LinkedHashMap<Integer, Double> antMemory = new LinkedHashMap<>();
     private final Map<HddVm, Pair<Integer, Double>> visitHistory = new HashMap<>();
     private final int uid;
     private final AntSystemConfig config;
@@ -19,9 +18,14 @@ public class Ant implements Comparable<Ant> {
     private HddVm nextNode = null;
 
     public Ant(int id, AntSystemConfig config) {
-        antMemory = new CircularFifoQueue<>(config.getAntHistorySize());
         uid = id;
         this.config = config;
+    }
+
+    public Ant(Ant next) {
+        config = next.config;
+        uid = -1;
+        antMemory.putAll(next.antMemory);
     }
 
     // result is - next server id, sleep time before jumping, new pheromone level at current server
@@ -31,7 +35,12 @@ public class Ant implements Comparable<Ant> {
             return null;
         } else {
             Double newPheromone = calculatePheromone(fuzzyFactor) + pherLevel;
-            antMemory.add(Pair.of(currentVM.getId(), newPheromone));
+            antMemory.put(currentVM.getId(), newPheromone);
+            if (antMemory.size() > config.getAntHistorySize()) {
+                Iterator<Integer> iterator = antMemory.keySet().iterator();
+                iterator.next();
+                iterator.remove();
+            }
             waitTime = updateTables(currentVM, newPheromone, fuzzyFactor, knownServers);
             nextNode = jumpNextNode(currentVM, knownServers);
 
@@ -149,7 +158,7 @@ public class Ant implements Comparable<Ant> {
     }
 
     Morph morph() {
-        Double sum = antMemory.stream().mapToDouble(Pair::getRight).sum();
+        Double sum = antMemory.values().stream().mapToDouble(x -> x).sum();
 
         if ((sum / antMemory.size()) < config.getMinMorphLevel()) {
             return Morph.MaxMorph;
@@ -171,8 +180,10 @@ public class Ant implements Comparable<Ant> {
 
             double remainingPher = 0;
 
+            Iterator<Double> iter = antMemory.values().iterator();
+
             for (int i = 0; i < scaledRemainingServers; i++) {
-                remainingPher += antMemory.get(i).getRight();
+                remainingPher += iter.next();
             }
             
             avgPher = remainingPher / antMemory.size();
@@ -184,11 +195,13 @@ public class Ant implements Comparable<Ant> {
             double totalPher = 0;
             double addPher = 0;
 
+            Iterator<Double> iter = antMemory.values().iterator();
+
             for (int i = 0; i < scaledBackHistory; i++) {
                 addPher += optimalPher;
             }
             for (int i = scaledBackHistory; i < antMemory.size(); i++) {
-                totalPher += antMemory.get(i).getRight();
+                totalPher += iter.next();
             }
 
             avgPher = (totalPher + addPher) / scaledAddedServers;
@@ -198,12 +211,21 @@ public class Ant implements Comparable<Ant> {
     }
 
     double getAveragePheromone() {
-        return antMemory.stream().mapToDouble(Pair::getValue).sum()/antMemory.size();
+        return antMemory.values().stream().mapToDouble(x -> x).sum()/antMemory.size();
     }
 
     @Override
     public int compareTo(Ant o) {
         return uid - o.uid;
+    }
+
+    @Override
+    public String toString() {
+        return "Ant{" +
+                "antMemory=" + antMemory +
+                ", visitHistory=" + visitHistory +
+                ", uid=" + uid +
+                '}';
     }
 
     /*public void reinit() {

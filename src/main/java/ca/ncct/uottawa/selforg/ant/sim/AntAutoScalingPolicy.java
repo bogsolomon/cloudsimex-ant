@@ -91,8 +91,13 @@ class AntAutoScalingPolicy implements IAutoscalingPolicy {
                 if (maxMorphCount > noMorphCount + minMorphCount) {
                     CustomLog.printf("Ant-Autoscale(%s) adding servers: %s", broker, this.debugSB);
                     optimizer.setAnts(antToServer.keySet());
+                    optimizer.setPheromones((double) config.getMaxMorphLevel(),
+                            (config.getMaxMorphLevel() + config.getMinMorphLevel()) / 2d);
                     addServers(optimizer.getAddServers(), loadBalancer, webBroker);
                 } else if (minMorphCount > noMorphCount + maxMorphCount) {
+                    optimizer.setAnts(antToServer.keySet());
+                    optimizer.setPheromones((double) config.getMaxMorphLevel(),
+                            (config.getMaxMorphLevel() + config.getMinMorphLevel()) / 2d);
                     if (antToServer.size() > 1) {
                         CustomLog.printf("Ant-Autoscale(%s) removing servers: %s", broker, this.debugSB);
                         removeServers(optimizer.getRemoveServers(), loadBalancer, webBroker);
@@ -107,6 +112,7 @@ class AntAutoScalingPolicy implements IAutoscalingPolicy {
     }
 
     private void removeServers(int removeCount, ILoadBalancer loadBalancer, WebBroker webBroker) {
+        CustomLog.printf("Ant-Autoscale actuating removing servers: %s", removeCount);
         List<HddVm> removeServers = new ArrayList<>();
         for (int i = 0; i < removeCount; i++) {
             for (HddVm vm : loadBalancer.getAppServers()) {
@@ -158,6 +164,7 @@ class AntAutoScalingPolicy implements IAutoscalingPolicy {
     }*/
 
     private void addServers(int addCount, ILoadBalancer loadBalancer, WebBroker webBroker) {
+        CustomLog.printf("Ant-Autoscale actuating adding servers: %s", addCount);
         List<HddVm> newServers = new ArrayList<>();
         for (int i = 0; i < addCount; i++) {
             HddVm newServ = loadBalancer.getAppServers().get(0).clone(new HddCloudletSchedulerTimeShared());

@@ -9,4 +9,5 @@ public interface IAntOptimizer {
     int getAddServers();
     int getRemoveServers();
     void setAnts(Set<Ant> ants);
+    void setPheromones(Double maxPher, Double minPher);
 }

@@ -20,4 +20,9 @@ public class SimpleAntOptimizer implements IAntOptimizer {
     public void setAnts(Set<Ant> ants) {
         // NO-OP
     }
+
+    @Override
+    public void setPheromones(Double maxPher, Double minPher) {
+
+    }
 }

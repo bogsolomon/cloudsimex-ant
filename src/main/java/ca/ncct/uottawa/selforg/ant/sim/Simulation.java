@@ -40,7 +40,7 @@ public class Simulation {
 
     private static Function<Pair<Long, Properties>, IAutoscalingPolicy> supplierSimple = uid -> new SimpleAutoScalingPolicy(uid.getLeft(), 0.8, 0.1, 150);
     private static Function<Pair<Long, Properties>, IAutoscalingPolicy> supplierSimpleAnt = uid -> new AntAutoScalingPolicy(uid.getRight(), uid.getLeft(), new SimpleAntOptimizer());
-    //private static Function<Pair<Long, Properties>, IAutoscalingPolicy> supplierHHAnt = uid -> new AntAutoScalingPolicy(uid.getRight(), uid.getLeft(), new HHAntOptimizer());
+    private static Function<Pair<Long, Properties>, IAutoscalingPolicy> supplierHHAnt = uid -> new AntAutoScalingPolicy(uid.getRight(), uid.getLeft(), new HHAntOptimizer());
 
     public static void main(String[] args) throws Exception {
         Properties props = new Properties();
@@ -57,9 +57,9 @@ public class Simulation {
             String outputProperties = basePath.getParent().toString() + "/" + simulationFiles[2].trim();
             String antProperties = basePath.getParent().toString() + "/" + simulationFiles[3].trim();
 
-            runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimple, "base");
-            runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimpleAnt, "antSimple");
-            //runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierHHAnt, "antHH");
+            //runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimple, "base");
+            //runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimpleAnt, "antSimple");
+            runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierHHAnt, "antHH");
         }
     }
 
