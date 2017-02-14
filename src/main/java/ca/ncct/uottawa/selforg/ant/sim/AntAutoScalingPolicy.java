@@ -53,6 +53,12 @@ class AntAutoScalingPolicy implements IAutoscalingPolicy {
                 int minMorphCount = 0;
                 int noMorphCount = 0;
 
+                for (HddVm vm : appServers) {
+                    this.debugSB.append(vm);
+                    this.debugSB.append("[" + vm.getStatus().name() + "] ");
+                    this.debugSB.append(String.format("cpu(%.2f) ram(%.2f) cdlts(%d);\t", new Object[]{Double.valueOf(vm.getCPUUtil()), Double.valueOf(vm.getRAMUtil()), Integer.valueOf(vm.getCloudletScheduler().getCloudletExecList().size())}));
+                }
+
                 for (Ant ant : antToServer.keySet()) {
                     HddVm currServer = antToServer.get(ant);
                     Double newPher = ant.controlStep(currServer, pherLevels.get(currServer),

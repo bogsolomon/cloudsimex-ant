@@ -11,7 +11,6 @@ import org.cloudbus.cloudsim.ex.web.SimpleDBBalancer;
 import org.cloudbus.cloudsim.ex.web.SimpleWebLoadBalancer;
 import org.cloudbus.cloudsim.ex.web.WebSession;
 import org.cloudbus.cloudsim.ex.web.workload.StatWorkloadGenerator;
-import org.cloudbus.cloudsim.ex.web.workload.brokers.SimpleAutoScalingPolicy;
 import org.cloudbus.cloudsim.ex.web.workload.brokers.WebBroker;
 import org.cloudbus.cloudsim.ex.web.workload.freq.CompositeValuedSet;
 import org.cloudbus.cloudsim.ex.web.workload.freq.FrequencyFunction;
@@ -57,8 +56,8 @@ public class Simulation {
             String outputProperties = basePath.getParent().toString() + "/" + simulationFiles[2].trim();
             String antProperties = basePath.getParent().toString() + "/" + simulationFiles[3].trim();
 
-            //runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimple, "base");
-            //runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimpleAnt, "antSimple");
+            runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimple, "base");
+            runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimpleAnt, "antSimple");
             runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierHHAnt, "antHH");
         }
     }
@@ -95,7 +94,7 @@ public class Simulation {
         Datacenter datacenter0 = createDatacenter("Datacenter_0", intfromProps(cloudProps, "hostCount"));
 
         WebBroker broker = new WebBroker("Broker", refreshTime,
-                intfromProps(workloadProps, "simTime") * 24 * 3600, 1, 5, datacenter0.getId());
+                intfromProps(workloadProps, "simTime") * 24 * 3600, 1, 60, datacenter0.getId());
         // Step 4: Create virtual machines
         List<Vm> vmlist = getVms(broker, intfromProps(cloudProps, "vmCount"));
 
