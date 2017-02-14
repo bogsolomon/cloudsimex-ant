@@ -8,27 +8,57 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class LogParser {
 
-    public static void main(String[] args) throws IOException {
-        Path outputFolderPath = Paths.get(args[1]);
+  //?<cpuValue>(\d*.\d*
+  private static final Pattern TIME_PATTERN = Pattern.compile("\\d*:\\d*:\\d*\\t(?<time>.*?)\\t.*\\d*:.*");
+  private static final Pattern CPU_PATTERN = Pattern.compile("(.*\\scpu\\((?<cpuValue>\\d*.\\d*)\\).*)?+");
 
-        File[] files = new File(args[0]).listFiles(File::isFile);
+  public static void main(String[] args) throws IOException {
+    Path outputFolderPath = Paths.get(args[1]);
 
-        for (File f : files) {
-            processFile(f, outputFolderPath);
-        }
+    File[] files = new File(args[0]).listFiles(File::isFile);
+
+    for (File f : files) {
+      processFile(f, outputFolderPath);
+    }
+  }
+
+  private static void processFile(File f, Path outputFolderPath) throws IOException {
+    Path path = f.toPath();
+    String basename = FilenameUtils.getBaseName(path.getFileName().toString());
+    Path outPath = f.toPath().resolve(basename+".out");
+
+    List<String> lines = Files.readAllLines(path);
+    List<String> outputLines = new ArrayList<>();
+
+    List<String> scale = lines.stream().filter(l -> l.contains("Simple-Autoscale") || l.contains("Ant-Autoscale"))
+        .collect(Collectors.toList());
+
+    scale.forEach(x -> outputLines.add(parseLine(x)));
+    Files.write(outPath, outputLines, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+  }
+
+  private static String parseLine(String line) {
+    StringBuilder buff = new StringBuilder();
+    Matcher matcher = TIME_PATTERN.matcher(line);
+    while (matcher.find())
+    {
+      buff.append(matcher.group("time").trim()).append(',');
+    }
+    matcher = CPU_PATTERN.matcher(line);
+    while (matcher.find())
+    {
+      buff.append(matcher.group("cpuValue"));
     }
 
-    private static void processFile(File f, Path outputFolderPath) throws IOException {
-        Path path = f.toPath();
-        String basename = FilenameUtils.getBaseName(path.getFileName().toString());
-        Path outPath = f.toPath().resolve(basename+".out");
-
-        List<String> lines = Files.readAllLines(path);
-
-        //lines.forEach();
-    }
+    return buff.toString();
+  }
 }
