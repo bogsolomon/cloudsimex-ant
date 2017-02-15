@@ -19,22 +19,21 @@ public class LogParser {
 
     private static final Pattern TIME_PATTERN = Pattern.compile("\\d*:\\d*:\\d*\\t(?<time>.*?)\\t.*\\d*:.*");
     private static final Pattern CPU_PATTERN = Pattern.compile("\\scpu\\((?<cpuValue>\\d*.\\d*)\\)");
-    private static final Pattern SESSION_PATTERN = Pattern.compile("\\sssessions\\((?<sessions>\\d*.\\d*)\\)");
+    private static final Pattern SESSION_PATTERN = Pattern.compile("\\ssessions\\((?<sessions>\\d*)\\)");
+    private static final Pattern PHER_PATTERN = Pattern.compile("\\spheromone\\(\\d*=(?<pheromone>\\d*.\\d*)\\)");
 
     public static void main(String[] args) throws IOException {
-        Path outputFolderPath = Paths.get(args[1]);
-
         File[] files = new File(args[0]).listFiles(File::isFile);
 
         for (File f : files) {
-            processFile(f, outputFolderPath);
+            processFile(f);
         }
     }
 
-    private static void processFile(File f, Path outputFolderPath) throws IOException {
+    private static void processFile(File f) throws IOException {
         Path path = f.toPath();
         String basename = FilenameUtils.getBaseName(path.getFileName().toString());
-        Path outPath = f.toPath().resolve(basename + ".out");
+        Path outPath = path.getParent().resolve(basename + ".out");
 
         List<String> lines = Files.readAllLines(path);
         List<String> outputLines = new ArrayList<>();
@@ -42,8 +41,9 @@ public class LogParser {
         List<String> scale = lines.stream().filter(l -> l.contains("Simple-Autoscale") || l.contains("Ant-Autoscale"))
                 .collect(Collectors.toList());
 
+        outputLines.add("Time,AverageCPU,Sessions,Pheromone");
         scale.forEach(x -> outputLines.add(parseLine(x)));
-        Files.write(outPath, outputLines, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+        Files.write(outPath, outputLines, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 
     private static String parseLine(String line) {
@@ -61,13 +61,22 @@ public class LogParser {
         }
         buff.append(count).append(',').append(cpuSum/count).append(',');
         matcher = SESSION_PATTERN.matcher(line);
-        int sessCount = 0;
+        double sessCount = 0;
         count = 0;
         while (matcher.find()) {
-            sessCount += Integer.valueOf(matcher.group("sessions"));
+            sessCount += Double.valueOf(matcher.group("sessions"));
             count++;
         }
-        buff.append((double) sessCount/count).append(',');
+        buff.append(sessCount/count).append(',');
+        matcher = PHER_PATTERN.matcher(line);
+        double pher = 0;
+        count = 0;
+        while (matcher.find()) {
+            pher += Double.valueOf(matcher.group("pheromone"));
+            count++;
+        }
+        buff.append(pher/count).append(',');
+        buff.deleteCharAt(buff.length() - 1);
 
         return buff.toString();
     }

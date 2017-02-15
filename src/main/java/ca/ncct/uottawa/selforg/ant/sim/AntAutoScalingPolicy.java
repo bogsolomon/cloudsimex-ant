@@ -90,7 +90,7 @@ class AntAutoScalingPolicy implements IAutoscalingPolicy {
                     nextDecay = currentTime + config.getDecayRate();
                 }
 
-                pherLevels.forEach((k, v) -> debugSB.append(k.getId()).append('=').append(v).append("; "));
+                pherLevels.forEach((k, v) -> debugSB.append("pheromone(").append(k.getId()).append('=').append(v).append(") "));
 
                 if (nextLog <= currentTime) {
                     CustomLog.printf("Ant-Autoscale(%s) pheromone levels: %s", broker, this.debugSB);
