@@ -1,4 +1,4 @@
-FilePath=D:/docker-images/simulation-results/sim1
+FilePath=D:/docker-images/simulation-results/sim2
 LogLevel=INFO
 LogCloudSimClock=true
 LogReadableSimClock=true

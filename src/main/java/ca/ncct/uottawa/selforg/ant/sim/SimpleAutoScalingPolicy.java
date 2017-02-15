@@ -4,10 +4,8 @@ package ca.ncct.uottawa.selforg.ant.sim;//
 //
 
 
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.ex.IAutoscalingPolicy;
 import org.cloudbus.cloudsim.ex.MonitoringBorkerEX;
@@ -55,8 +53,12 @@ public class SimpleAutoScalingPolicy implements IAutoscalingPolicy {
                     avgCPU += vm.getCPUUtil();
                     ++count;
                     candidateToStop = vm;
+
+                    Set<Integer> sessions = webBroker.getSessionsInServer(vm.getId());
+
                     this.debugSB.append(vm);
-                    this.debugSB.append("[" + vm.getStatus().name() + "] ");
+                    this.debugSB.append("[").append(vm.getStatus().name()).append("] ");
+                    this.debugSB.append(String.format("sessions(%d) ", sessions.size()));
                     this.debugSB.append(String.format("cpu(%.2f) ram(%.2f) cdlts(%d);\t", new Object[]{Double.valueOf(vm.getCPUUtil()), Double.valueOf(vm.getRAMUtil()), Integer.valueOf(vm.getCloudletScheduler().getCloudletExecList().size())}));
                 }
             }
