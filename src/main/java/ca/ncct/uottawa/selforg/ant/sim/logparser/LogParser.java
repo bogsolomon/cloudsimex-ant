@@ -23,7 +23,7 @@ public class LogParser {
     private static final Pattern PHER_PATTERN = Pattern.compile("\\spheromone\\(\\d*=(?<pheromone>\\d*.\\d*)\\)");
 
     public static void main(String[] args) throws IOException {
-        File[] files = new File(args[0]).listFiles(File::isFile);
+        File[] files = new File(args[0]).listFiles(file -> file.isFile() && file.toString().endsWith(".log"));
 
         for (File f : files) {
             processFile(f);
@@ -41,7 +41,7 @@ public class LogParser {
         List<String> scale = lines.stream().filter(l -> l.contains("Simple-Autoscale") || l.contains("Ant-Autoscale"))
                 .collect(Collectors.toList());
 
-        outputLines.add("Time,AverageCPU,Sessions,Pheromone");
+        outputLines.add("Time,Servers,AverageCPU,Sessions,Pheromone");
         scale.forEach(x -> outputLines.add(parseLine(x)));
         Files.write(outPath, outputLines, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
     }
@@ -67,7 +67,7 @@ public class LogParser {
             sessCount += Double.valueOf(matcher.group("sessions"));
             count++;
         }
-        buff.append(sessCount/count).append(',');
+        buff.append(sessCount).append(',');
         matcher = PHER_PATTERN.matcher(line);
         double pher = 0;
         count = 0;
