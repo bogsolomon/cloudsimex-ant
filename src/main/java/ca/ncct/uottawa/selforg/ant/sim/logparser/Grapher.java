@@ -1,7 +1,6 @@
 package ca.ncct.uottawa.selforg.ant.sim.logparser;
 
-import java.awt.Color;
-import java.awt.Font;
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,6 +16,7 @@ import org.jfree.chart.axis.NumberTickUnit;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.renderer.xy.XYSplineRenderer;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -41,6 +41,7 @@ public class Grapher {
 
     XYSeries cpuSeries = new XYSeries("CPU usage");
     XYSeries sessionsSeries = new XYSeries("Sessions");
+    XYSeries serversSeries = new XYSeries("Servers");
 
     int imageCount = 1;
     double maxTime = MAX_GRAPH_TIME;
@@ -48,47 +49,60 @@ public class Grapher {
       String[] vals = line.split(",");
       Double time = Double.valueOf(vals[0]);
       if (time > maxTime) {
-        writeChart(cpuSeries, sessionsSeries, basename, imageCount, path, maxTime);
+        writeChart(cpuSeries, sessionsSeries, serversSeries, basename, imageCount, path, maxTime);
         maxTime += MAX_GRAPH_TIME;
         imageCount++;
         cpuSeries.clear();
         sessionsSeries.clear();
+        serversSeries.clear();
       }
 
       cpuSeries.add(time, Double.valueOf(Double.valueOf(vals[2]) * 100));
       sessionsSeries.add(time, Double.valueOf(vals[3]));
+      serversSeries.add(time, Double.valueOf(vals[1]));
     }
 
     // write final image
-    writeChart(cpuSeries, sessionsSeries, basename, imageCount, path, maxTime);
+    writeChart(cpuSeries, sessionsSeries, serversSeries, basename, imageCount, path, maxTime);
   }
 
-  private static void writeChart(XYSeries cpuSeries, XYSeries sessionsSeries,
+  private static void writeChart(XYSeries cpuSeries, XYSeries sessionsSeries, XYSeries serverSeries,
       String basename, int imageCount, Path path, double maxTime) throws IOException {
     XYSeriesCollection cpuDataset = new XYSeriesCollection();
     XYSeriesCollection sessionsDataset = new XYSeriesCollection();
+    XYSeriesCollection serverDataset = new XYSeriesCollection();
     cpuDataset.addSeries(cpuSeries);
     sessionsDataset.addSeries(sessionsSeries);
+    serverDataset.addSeries(serverSeries);
 
     XYPlot plot = new XYPlot();
     plot.setDataset(0, cpuDataset);
     plot.setDataset(1, sessionsDataset);
+    plot.setDataset(2, serverDataset);
 
     XYSplineRenderer splinerendererCPU = new XYSplineRenderer();
     splinerendererCPU.setBaseShapesVisible(false);
     plot.setRenderer(0, splinerendererCPU);
 
     XYSplineRenderer splinerenderer = new XYSplineRenderer();
-    splinerenderer.setSeriesFillPaint(0, Color.BLUE);
+    splinerenderer.setSeriesPaint(0, Color.BLUE);
     splinerenderer.setBaseShapesVisible(false);
     plot.setRenderer(1, splinerenderer);
+
+    XYLineAndShapeRenderer splinerendererServ = new XYLineAndShapeRenderer();
+    splinerendererServ.setSeriesPaint(0, Color.BLACK);
+    splinerendererServ.setBaseShapesVisible(false);
+    splinerendererServ.setSeriesStroke(0, new BasicStroke(2));
+    plot.setRenderer(2, splinerendererServ);
+
     plot.setRangeAxis(0, new NumberAxis("CPU usage (%)"));
-    plot.setRangeAxis(1, new NumberAxis("Session count"));
+    plot.setRangeAxis(1, new NumberAxis("Count"));
     plot.setDomainAxis(new NumberAxis("Time (s)"));
     plot.getDomainAxis().setRange(maxTime - MAX_GRAPH_TIME, maxTime);
 
     plot.mapDatasetToRangeAxis(0, 0);
     plot.mapDatasetToRangeAxis(1, 1);
+    plot.mapDatasetToRangeAxis(2, 1);
 
     int width = 640; /* Width of the image */
     int height = 480; /* Height of the image */

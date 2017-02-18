@@ -169,6 +169,12 @@ public class Ant implements Comparable<Ant> {
         }
     }
 
+    Double getMorphValue() {
+        Double sum = antMemory.values().stream().mapToDouble(x -> x).sum();
+
+        return sum / antMemory.size();
+    }
+
     Double evaluateFitness(HHAntOptimizer.Nest nest, int originalSize, double maxPher, double optimalPher) {
         double scaleFactor = nest.getServerCount() / (double) originalSize;
 
@@ -216,7 +222,7 @@ public class Ant implements Comparable<Ant> {
 
     @Override
     public int compareTo(Ant o) {
-        return uid - o.uid;
+        return getUid() - o.getUid();
     }
 
     @Override
@@ -224,8 +230,12 @@ public class Ant implements Comparable<Ant> {
         return "Ant{" +
                 "antMemory=" + antMemory +
                 ", visitHistory=" + visitHistory +
-                ", uid=" + uid +
+                ", uid=" + getUid() +
                 '}';
+    }
+
+    public int getUid() {
+        return uid;
     }
 
     /*public void reinit() {

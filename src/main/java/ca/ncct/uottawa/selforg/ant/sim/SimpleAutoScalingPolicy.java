@@ -24,6 +24,9 @@ public class SimpleAutoScalingPolicy implements IAutoscalingPolicy {
     private StringBuilder debugSB = new StringBuilder();
     private double lastActionTime = -1.0D;
 
+    private static final int LOG_RATE = 60;
+    private double nextLog = 0;
+
     public SimpleAutoScalingPolicy(long appId, double scaleUpCPUTrigger, double scaleDownCPUTrigger, double coolDownPeriod) {
         if(scaleUpCPUTrigger < scaleDownCPUTrigger) {
             throw new IllegalArgumentException("Scale-up ratio should be greater than scale-down. Provided values: " + scaleUpCPUTrigger + "; " + scaleDownCPUTrigger);
@@ -64,7 +67,11 @@ public class SimpleAutoScalingPolicy implements IAutoscalingPolicy {
             }
 
             avgCPU = count == 0?0.0D:avgCPU / (double)count;
-            CustomLog.printf("Simple-Autoscale(%s) avg-cpu(%.2f): %s", new Object[]{broker, Double.valueOf(avgCPU), this.debugSB});
+            if (nextLog <= currentTime) {
+                CustomLog.printf("Simple-Autoscale(%s) avg-cpu(%.2f): %s", new Object[]{broker, Double.valueOf(avgCPU), this.debugSB});
+                nextLog = currentTime + LOG_RATE;
+            }
+
             if(performScaling && avgCPU > this.scaleUpCPUTrigger) {
                 HddVm var13 = ((HddVm)loadBalancer.getAppServers().get(0)).clone(new HddCloudletSchedulerTimeShared());
                 loadBalancer.registerAppServer(var13);

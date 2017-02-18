@@ -67,6 +67,8 @@ class AntAutoScalingPolicy implements IAutoscalingPolicy {
                     Double newPher = ant.controlStep(currServer, pherLevels.get(currServer),
                             Math.min(currServer.getCPUUtil(), 1d), appServers, diffTime);
                     if (newPher != null) {
+                        /*CustomLog.printf("Ant-Autoscale(%s) ant: %d adding pheromone %f to server %d and going to %d",
+                                broker, ant.getUid(), newPher, currServer.getId(), ant.getNextNode().getId());*/
                         pherLevels.put(currServer, newPher);
                         updatedMoves.put(ant, ant.getNextNode());
                     }
@@ -81,6 +83,8 @@ class AntAutoScalingPolicy implements IAutoscalingPolicy {
                             noMorphCount++;
                             break;
                     }
+                    /*CustomLog.printf("Ant-Autoscale(%s) ant: %d morph type: %s with value %f",
+                            broker, ant.getUid(), ant.morph().toString(), ant.getMorphValue());*/
                 }
 
                 antToServer.putAll(updatedMoves);
@@ -91,6 +95,7 @@ class AntAutoScalingPolicy implements IAutoscalingPolicy {
                 }
 
                 pherLevels.forEach((k, v) -> debugSB.append("pheromone(").append(k.getId()).append('=').append(v).append(") "));
+                antToServer.forEach((k, v) -> debugSB.append("antToServer(").append(k.getUid()).append('=').append(v.getId()).append(") "));
 
                 if (nextLog <= currentTime) {
                     CustomLog.printf("Ant-Autoscale(%s) pheromone levels: %s", broker, this.debugSB);
@@ -98,7 +103,7 @@ class AntAutoScalingPolicy implements IAutoscalingPolicy {
                 }
 
                 if (maxMorphCount > noMorphCount + minMorphCount) {
-                    CustomLog.printf("Ant-Autoscale(%s) adding servers: %s", broker, this.debugSB);
+                    CustomLog.printf("Ant-Autoscale(%s) Scale-Up servers: %s", broker, this.debugSB);
                     optimizer.setAnts(antToServer.keySet());
                     optimizer.setPheromones((double) config.getMaxMorphLevel(),
                             (config.getMaxMorphLevel() + config.getMinMorphLevel()) / 2d);
@@ -108,7 +113,7 @@ class AntAutoScalingPolicy implements IAutoscalingPolicy {
                     optimizer.setPheromones((double) config.getMaxMorphLevel(),
                             (config.getMaxMorphLevel() + config.getMinMorphLevel()) / 2d);
                     if (antToServer.size() > 1) {
-                        CustomLog.printf("Ant-Autoscale(%s) removing servers: %s", broker, this.debugSB);
+                        CustomLog.printf("Ant-Autoscale(%s) Scale-Down servers: %s", broker, this.debugSB);
                         removeServers(optimizer.getRemoveServers(), loadBalancer, webBroker);
                     }
                 } /*else {

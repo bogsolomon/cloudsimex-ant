@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 public class LogParser {
 
     private static final Pattern TIME_PATTERN = Pattern.compile("\\d*:\\d*:\\d*\\t(?<time>.*?)\\t.*\\d*:.*");
-    private static final Pattern CPU_PATTERN = Pattern.compile("\\scpu\\((?<cpuValue>\\d*.\\d*)\\)");
+    private static final Pattern CPU_PATTERN = Pattern.compile("\\scpu\\((?<cpuValue>(-)?\\d*.\\d*)\\)");
     private static final Pattern SESSION_PATTERN = Pattern.compile("\\ssessions\\((?<sessions>\\d*)\\)");
     private static final Pattern PHER_PATTERN = Pattern.compile("\\spheromone\\(\\d*=(?<pheromone>\\d*.\\d*)\\)");
 
@@ -38,7 +38,8 @@ public class LogParser {
         List<String> lines = Files.readAllLines(path);
         List<String> outputLines = new ArrayList<>();
 
-        List<String> scale = lines.stream().filter(l -> l.contains("Simple-Autoscale") || l.contains("Ant-Autoscale"))
+        List<String> scale = lines.stream().filter(l -> (l.contains("Simple-Autoscale") || l.contains("Ant-Autoscale"))
+                && !l.contains("Scale-Up") && !l.contains("Scale-Down") && !l.contains("actuating"))
                 .collect(Collectors.toList());
 
         outputLines.add("Time,Servers,AverageCPU,Sessions,Pheromone");
