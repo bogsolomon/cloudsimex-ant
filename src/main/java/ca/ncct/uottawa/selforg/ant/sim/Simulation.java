@@ -56,16 +56,18 @@ public class Simulation {
             String outputProperties = basePath.getParent().toString() + "/" + simulationFiles[2].trim();
             String antProperties = basePath.getParent().toString() + "/" + simulationFiles[3].trim();
 
-            runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimple, "base");
-            runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimpleAnt, "antSimple");
-            runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierHHAnt, "antHH");
+            for (int i = 0; i < 5; i++) {
+                runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimple, "base", i);
+                runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimpleAnt, "antSimple", i);
+                runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierHHAnt, "antHH", i);
+            }
         }
     }
 
     private static void runSimulation(String simName, String cloudProperties, String workloadProperties,
                                       String outputProperties, String antProperties,
                                       Function<Pair<Long, Properties>, IAutoscalingPolicy> scalingPolicy,
-                                      String type) throws Exception {
+                                      String type, int count) throws Exception {
         System.err.println("Starting simulation " + simName);
         Properties cloudProps = new Properties();
         try (InputStream is = Files.newInputStream(Paths.get(cloudProperties))) {
@@ -86,7 +88,7 @@ public class Simulation {
         try (InputStream is = Files.newInputStream(Paths.get(outputProperties))) {
             logProps.load(is);
         }
-        logProps.setProperty("FilePath", logProps.getProperty("FilePath")+"-"+type+".log");
+        logProps.setProperty("FilePath", logProps.getProperty("FilePath") + "-" + type + "-"+count+".log");
         CustomLog.configLogger(logProps);
 
         CloudSim.init(1, Calendar.getInstance(), false);
@@ -140,7 +142,7 @@ public class Simulation {
         int mips = 250;
         int ioMips = 200;
         long size = 10000; // image size (MB)
-        int ram = 1024*8; // vm memory (MB)
+        int ram = 1024 * 8; // vm memory (MB)
         long bw = 1000;
         int pesNumber = 1; // number of cpus
         String vmm = "Xen"; // VMM name
@@ -184,7 +186,7 @@ public class Simulation {
         hddList.add(new HddPe(new PeProvisionerSimple(iops), data));
 
         for (int i = 0; i < hostCount; i++) {
-            int ram = 1024*32; // host memory (MB)
+            int ram = 1024 * 32; // host memory (MB)
             long storage = 1000000; // host storage
             int bw = 10000;
 
@@ -228,8 +230,7 @@ public class Simulation {
         double nullPoint = 0;
         String[] periods = new String[24];
 
-        for (int i = 0; i < 24; i++)
-        {
+        for (int i = 0; i < 24; i++) {
             periods[i] = String.format("[%d,%d] m=%d std=%d", HOURS[i], HOURS[i + 1], scaleFactor * intfromProps(workload, "m" + i)
                     , intfromProps(workload, "std" + i));
             /*periods[i] = String.format("[%d,%d] m=%d std=%d", HOURS[i], HOURS[i + 1], 1, 0);*/
