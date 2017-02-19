@@ -1,6 +1,5 @@
 package ca.ncct.uottawa.selforg.ant.sim.logparser;
 
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.File;
@@ -14,8 +13,8 @@ import java.util.List;
 import java.util.Map;
 
 public class StatsGen {
-    static Map<String, Results> resultsByTest = new HashMap<>();
-    private static int ONE_HOUR = 60*60;
+    private static Map<String, Results> resultsByTest = new HashMap<>();
+    private static final int ONE_HOUR = 60*60;
 
     public static void main(String[] args) throws IOException {
         File[] files = new File(args[0]).listFiles(file -> file.isFile() && file.toString().endsWith(".out"));
@@ -82,12 +81,9 @@ public class StatsGen {
         }
 
         String getAverages() {
-            StringBuilder strBuilder = new StringBuilder();
-            strBuilder.append(cpuValues.stream().mapToDouble(value -> value).average().orElse(0d)).append(',');
-            strBuilder.append(sessionValues.stream().mapToDouble(value -> value).average().orElse(0d)).append(',');
-            strBuilder.append(serverValues.stream().mapToDouble(value -> value).average().orElse(0d));
-
-            return strBuilder.toString();
+            return String.valueOf(cpuValues.stream().mapToDouble(value -> value).average().orElse(0d)) + ',' +
+                    sessionValues.stream().mapToDouble(value -> value).average().orElse(0d) + ',' +
+                    serverValues.stream().mapToDouble(value -> value).average().orElse(0d);
         }
     }
 }
