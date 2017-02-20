@@ -1,5 +1,6 @@
 package ca.ncct.uottawa.selforg.ant.sim.logparser;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.File;
@@ -11,6 +12,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class StatsGen {
     private static Map<String, Results> resultsByTest = new HashMap<>();
@@ -49,6 +52,9 @@ public class StatsGen {
     }
 
     private static class Results {
+        private static Function<Pair<Double, Double>, Boolean> greaterThanComparison = vals -> vals.getLeft() > vals.getRight();
+        private static Function<Pair<Double, Double>, Boolean> lessThanComparison = vals -> vals.getLeft() < vals.getRight();
+
         List<HourlyResult> hourlyResults = new ArrayList<>();
 
         void addResult(Triple<Double, Double, Double> results, Double time) {
@@ -60,12 +66,31 @@ public class StatsGen {
         }
 
         List<String> getStats() {
-            List<String> res = new ArrayList<>();
-            for (HourlyResult hRes: hourlyResults) {
-                res.add(hRes.getAverages());
+            return hourlyResults.stream().map(HourlyResult::getAverages).collect(Collectors.toList());
+        }
+
+        int getScaleUpCount() {
+            return getScaleCount(greaterThanComparison);
+        }
+
+        int getScaleDownCount() {
+            return getScaleCount(lessThanComparison);
+        }
+
+        int getScaleCount(Function<Pair<Double, Double>, Boolean> func) {
+            int scaleUpCount = 0;
+            double lastServCount = hourlyResults.get(0).serverValues.get(0);
+
+            for (HourlyResult res: hourlyResults) {
+                for (Double servCount : res.serverValues) {
+                    if (func.apply(Pair.of(servCount, lastServCount))) {
+                        scaleUpCount++;
+                    }
+                    lastServCount = servCount;
+                }
             }
 
-            return res;
+            return scaleUpCount;
         }
     }
 
