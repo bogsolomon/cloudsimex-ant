@@ -30,6 +30,23 @@ public class StatsGen {
             Path outPath = files[0].toPath().getParent().resolve(entry.getKey() + ".stats");
 
             Files.write(outPath, entry.getValue().getStats(), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+
+            Path outPath2 = files[0].toPath().getParent().resolve(entry.getKey() + ".stats2");
+            List<String> stats2 = new ArrayList<>();
+
+            stats2.add("Scale Up Count:" + entry.getValue().getScaleUpCount());
+            stats2.add("Scale Down Count:" + entry.getValue().getScaleDownCount());
+            stats2.add("Over provisioned time - 0.1:" + entry.getValue().getOverProvisionedTime(0.1));
+            stats2.add("Over provisioned time - 0.2:" + entry.getValue().getOverProvisionedTime(0.2));
+            stats2.add("Over provisioned time - 0.3:" + entry.getValue().getOverProvisionedTime(0.3));
+            stats2.add("Over provisioned time - 0.4:" + entry.getValue().getOverProvisionedTime(0.4));
+            stats2.add("Over provisioned time - 0.5:" + entry.getValue().getOverProvisionedTime(0.5));
+            stats2.add("Under provisioned time - 0.7:" + entry.getValue().getUnderProvisionedTime(0.7));
+            stats2.add("Under provisioned time - 0.8:" + entry.getValue().getUnderProvisionedTime(0.8));
+            stats2.add("Under provisioned time - 0.9:" + entry.getValue().getUnderProvisionedTime(0.9));
+            stats2.add("Under provisioned time - 0.95:" + entry.getValue().getUnderProvisionedTime(0.95));
+
+            Files.write(outPath2, stats2, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
         }
     }
 
@@ -62,7 +79,7 @@ public class StatsGen {
             if (hourlyResults.size() <= resIndex) {
                 hourlyResults.add(new HourlyResult());
             }
-            hourlyResults.get(resIndex).addResult(results);
+            hourlyResults.get(resIndex).addResult(results, time);
         }
 
         List<String> getStats() {
@@ -92,17 +109,66 @@ public class StatsGen {
 
             return scaleUpCount;
         }
+
+        double getOverProvisionedTime(double threshold) {
+            return getTime(lessThanComparison, threshold);
+        }
+
+        double getUnderProvisionedTime(double threshold) {
+            return getTime(greaterThanComparison, threshold);
+        }
+
+        double getTime(Function<Pair<Double, Double>, Boolean> func, double threshold) {
+            double totalTime = 0;
+            double startTime = -1;
+            double currTime = -1;
+            double endTimeLast = -1;
+
+            for (HourlyResult res: hourlyResults) {
+                int idx = 0;
+                for (Double cpuValue : res.cpuValues) {
+                    if (res.timeValues.get(idx) < currTime) {
+                        endTimeLast = currTime;
+                    }
+                    currTime = res.timeValues.get(idx);
+
+                    if (res.serverValues.get(idx) != 1.0d) {
+                        if (func.apply(Pair.of(cpuValue, threshold))) {
+                            if (startTime == -1) {
+                                startTime = currTime;
+                                endTimeLast = -1;
+                            }
+                        } else if (startTime != -1) {
+                            if (endTimeLast == -1) {
+                                totalTime += currTime - startTime;
+                            } else {
+                                totalTime += endTimeLast - startTime;
+                                totalTime += currTime - res.timeValues.get(0);
+                            }
+                            startTime = -1;
+                        }
+                    } else {
+                        startTime = -1;
+                    }
+                    idx++;
+                }
+            }
+
+            return totalTime;
+        }
     }
 
     private static class HourlyResult {
         List<Double> cpuValues = new ArrayList<>();
         List<Double> sessionValues = new ArrayList<>();
         List<Double> serverValues = new ArrayList<>();
+        List<Double> timeValues = new ArrayList<>();
 
-        void addResult(Triple<Double, Double, Double> results) {
+        void addResult(Triple<Double, Double, Double> results, Double time) {
             serverValues.add(results.getLeft());
             cpuValues.add(results.getMiddle());
             sessionValues.add(results.getRight());
+            timeValues.add(time);
         }
 
         String getAverages() {
