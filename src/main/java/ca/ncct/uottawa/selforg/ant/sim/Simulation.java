@@ -6,10 +6,7 @@ import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.ex.IAutoscalingPolicy;
 import org.cloudbus.cloudsim.ex.disk.*;
 import org.cloudbus.cloudsim.ex.util.CustomLog;
-import org.cloudbus.cloudsim.ex.web.ILoadBalancer;
-import org.cloudbus.cloudsim.ex.web.SimpleDBBalancer;
-import org.cloudbus.cloudsim.ex.web.SimpleWebLoadBalancer;
-import org.cloudbus.cloudsim.ex.web.WebSession;
+import org.cloudbus.cloudsim.ex.web.*;
 import org.cloudbus.cloudsim.ex.web.workload.StatWorkloadGenerator;
 import org.cloudbus.cloudsim.ex.web.workload.brokers.WebBroker;
 import org.cloudbus.cloudsim.ex.web.workload.freq.CompositeValuedSet;
@@ -154,11 +151,13 @@ public class Simulation {
                     ram, bw, size, vmm, new HddCloudletSchedulerTimeShared(), new Integer[0]));
         }
 
-        dbServList.add(new HddVm("App-Srv", broker.getId(), mips, ioMips, pesNumber,
-                ram, bw, size, vmm, new HddCloudletSchedulerTimeShared(), new Integer[0]));
+        for (int i = 0; i < 30; i++) {
+            dbServList.add(new HddVm("App-Srv", broker.getId(), mips, ioMips, pesNumber,
+                    ram, bw, size, vmm, new HddCloudletSchedulerTimeShared(), new Integer[0]));
+        }
 
         ILoadBalancer balancer = new SimpleWebLoadBalancer(
-                1, "127.0.0.1", appServList, new SimpleDBBalancer(dbServList));
+                1, "127.0.0.1", appServList, new RoundRobinDBBalancer(dbServList));
         broker.addLoadBalancer(balancer);
 
         // add the VMs to the vmList

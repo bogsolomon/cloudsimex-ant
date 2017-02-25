@@ -1,1 +1,3 @@
-sim1=sim1/cloud.props,sim1/workload.props,sim1/output.props,sim1/ant.props
+#sim1=sim1/cloud.props,sim1/workload.props,sim1/output.props,sim1/ant.props
+sim2=sim2/cloud.props,sim2/workload.props,sim2/output.props,sim2/ant.props
+sim3=sim3/cloud.props,sim3/workload.props,sim3/output.props,sim3/ant.props
