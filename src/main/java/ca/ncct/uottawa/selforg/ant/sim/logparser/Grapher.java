@@ -70,7 +70,8 @@ public class Grapher {
         List<String> lines = Files.readAllLines(path);
 
         XYSeries cpuSeries = new XYSeries("CPU usage");
-        XYSeries sessionsSeries = new XYSeries("Session/Server");
+        XYSeries sessionsSeries = new XYSeries("Session/Server Count");
+        XYSeries serverSeries = new XYSeries("Server Count");
 
         int timeCount = 0;
 
@@ -78,13 +79,14 @@ public class Grapher {
             String[] vals = line.split(",");
 
             cpuSeries.add(timeCount, Double.valueOf(Double.valueOf(vals[0]) * 100));
+            serverSeries.add(timeCount, Double.valueOf(vals[2]));
             sessionsSeries.add(timeCount, Double.valueOf(vals[3]));
 
             timeCount++;
         }
 
         // write final image
-        writeStatsChart(cpuSeries, sessionsSeries, basename, path);
+        writeStatsChart(cpuSeries, sessionsSeries, serverSeries, basename, path);
     }
 
     private static void makeGraph(File f) throws IOException {
@@ -121,30 +123,40 @@ public class Grapher {
     }
 
     private static void writeStatsChart(XYSeries cpuSeries, XYSeries sessionsSeries,
-                                        String basename, Path path) throws IOException {
+                                        XYSeries serverSeries, String basename, Path path) throws IOException {
         XYSeriesCollection cpuDataset = new XYSeriesCollection();
         XYSeriesCollection sessionsDataset = new XYSeriesCollection();
+        XYSeriesCollection serverDataset = new XYSeriesCollection();
         cpuDataset.addSeries(cpuSeries);
         sessionsDataset.addSeries(sessionsSeries);
+        serverDataset.addSeries(serverSeries);
 
         XYPlot plot = new XYPlot();
         plot.setDataset(0, cpuDataset);
         plot.setDataset(1, sessionsDataset);
+        plot.setDataset(2, serverDataset);
 
         XYSplineRenderer splinerendererCPU = new XYSplineRenderer();
         splinerendererCPU.setBaseShapesVisible(false);
         plot.setRenderer(0, splinerendererCPU);
+
+        XYLineAndShapeRenderer splinerendererServ = new XYLineAndShapeRenderer();
+        splinerendererServ.setSeriesPaint(0, Color.BLACK);
+        splinerendererServ.setBaseShapesVisible(false);
+        splinerendererServ.setSeriesStroke(0, new BasicStroke(2));
+        plot.setRenderer(2, splinerendererServ);
 
         XYSplineRenderer splinerenderer = new XYSplineRenderer();
         splinerenderer.setSeriesFillPaint(0, Color.BLUE);
         splinerenderer.setBaseShapesVisible(false);
         plot.setRenderer(1, splinerenderer);
         plot.setRangeAxis(0, new NumberAxis("CPU usage (%)"));
-        plot.setRangeAxis(1, new NumberAxis("Average Session/Server"));
+        plot.setRangeAxis(1, new NumberAxis("Count"));
         plot.setDomainAxis(new NumberAxis("Time (Hours)"));
 
         plot.mapDatasetToRangeAxis(0, 0);
         plot.mapDatasetToRangeAxis(1, 1);
+        plot.mapDatasetToRangeAxis(2, 1);
 
         int width = 640; /* Width of the image */
         int height = 480; /* Height of the image */

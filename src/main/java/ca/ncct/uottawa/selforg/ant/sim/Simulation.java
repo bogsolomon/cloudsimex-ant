@@ -59,7 +59,7 @@ public class Simulation {
                 runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimple, "base", i);
                 runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimpleAnt, "antSimple", i);
                 runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierHHAnt, "antHH", i);
-                runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierCompressed, "compressed", i);
+                //runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierCompressed, "compressed", i);
             }
         }
     }
