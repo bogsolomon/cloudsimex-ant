@@ -1,7 +1,7 @@
 package ca.ncct.uottawa.selforg.ant.sim;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.cloudbus.cloudsim.ex.util.CustomLog;
+//import org.cloudbus.cloudsim.ex.util.CustomLog;
 
 import java.util.*;
 import java.util.function.Function;
@@ -61,7 +61,7 @@ public class HHAntOptimizer implements IAntOptimizer {
             nest.getFitness().put(ant, ant.evaluateFitness(nest, originalSize, maxPher, optPher));
         }
 
-        CustomLog.printf("Ant-HouseHunting init: %s", antToNest);
+        //CustomLog.printf("Ant-HouseHunting init: %s", antToNest);
 
         while (!endCondition()) {
             recruitmentPhase(originalSize);
@@ -80,7 +80,7 @@ public class HHAntOptimizer implements IAntOptimizer {
         Map<Ant, Nest> recruiterNests = new HashMap<>();
 
         antToNest = sortByValue(antToNest);
-        CustomLog.printf("Ant-HouseHunting sorted nests: %s", antToNest);
+        //CustomLog.printf("Ant-HouseHunting sorted nests: %s", antToNest);
 
         while (!antToNest.isEmpty()) {
             double rand = random.nextDouble();
@@ -118,7 +118,7 @@ public class HHAntOptimizer implements IAntOptimizer {
             antToNest.remove(recruited);
         }
 
-        CustomLog.printf("Ant-HouseHunting recruitment: %s", recruitmentAnts);
+        //CustomLog.printf("Ant-HouseHunting recruitment: %s", recruitmentAnts);
         // update nests, recruiter and recruited go to recruiter nest
         for (Pair<Ant, Ant> recruitment : recruitmentAnts) {
             Nest nest = recruiterNests.get(recruitment.getLeft());

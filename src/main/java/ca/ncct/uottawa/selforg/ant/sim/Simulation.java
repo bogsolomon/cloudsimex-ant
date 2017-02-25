@@ -8,6 +8,7 @@ import org.cloudbus.cloudsim.ex.disk.*;
 import org.cloudbus.cloudsim.ex.util.CustomLog;
 import org.cloudbus.cloudsim.ex.web.*;
 import org.cloudbus.cloudsim.ex.web.workload.StatWorkloadGenerator;
+import org.cloudbus.cloudsim.ex.web.workload.brokers.CompressedAutoscalingPolicy;
 import org.cloudbus.cloudsim.ex.web.workload.brokers.WebBroker;
 import org.cloudbus.cloudsim.ex.web.workload.freq.CompositeValuedSet;
 import org.cloudbus.cloudsim.ex.web.workload.freq.FrequencyFunction;
@@ -35,6 +36,7 @@ public class Simulation {
     private static DataItem data = new DataItem(5);
 
     private static Function<Pair<Long, Properties>, IAutoscalingPolicy> supplierSimple = uid -> new SimpleAutoScalingPolicy(uid.getLeft(), 0.8, 0.1, 150);
+    private static Function<Pair<Long, Properties>, IAutoscalingPolicy> supplierCompressed = uid -> new CompressedAutoscalingPolicy(uid.getLeft(), 0.7, 0.7, 5, 150);
     private static Function<Pair<Long, Properties>, IAutoscalingPolicy> supplierSimpleAnt = uid -> new AntAutoScalingPolicy(uid.getRight(), uid.getLeft(), new SimpleAntOptimizer());
     private static Function<Pair<Long, Properties>, IAutoscalingPolicy> supplierHHAnt = uid -> new AntAutoScalingPolicy(uid.getRight(), uid.getLeft(), new HHAntOptimizer());
 
@@ -57,6 +59,7 @@ public class Simulation {
                 runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimple, "base", i);
                 runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimpleAnt, "antSimple", i);
                 runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierHHAnt, "antHH", i);
+                runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierCompressed, "compressed", i);
             }
         }
     }
