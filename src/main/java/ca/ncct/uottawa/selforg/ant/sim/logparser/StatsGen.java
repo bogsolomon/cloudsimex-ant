@@ -1,5 +1,6 @@
 package ca.ncct.uottawa.selforg.ant.sim.logparser;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -18,6 +19,9 @@ import java.util.stream.Collectors;
 public class StatsGen {
   private static Map<String, Results> resultsByTest = new HashMap<>();
   private static final int ONE_HOUR = 60 * 60;
+
+  private static final List<Double> MIN_VALS = ImmutableList.of(0.1, 0.2, 0.3, 0.4, 0.5);
+  private static final List<Double> MAX_VALS = ImmutableList.of(0.5, 0.6, 0.7, 0.8, 0.9, 0.95);
 
   public static void main(String[] args) throws IOException {
     File[] files = new File(args[0]).listFiles(file -> file.isFile() && file.toString().endsWith(".out"));
@@ -72,6 +76,11 @@ public class StatsGen {
   }
 
   private static class Results {
+    private Map<Double, Double> startTimes = new HashMap<>();
+    private Map<Double, Double> totalTimes = new HashMap<>();
+    private Double timeOneServer = 0d;
+    private Double timeOneServerStart = -1d;
+
     private static Function<Pair<Double, Double>, Boolean> greaterThanComparison = vals -> vals.getLeft() > vals
         .getRight();
     private static Function<Pair<Double, Double>, Boolean> lessThanComparison = vals -> vals.getLeft() < vals
@@ -79,12 +88,38 @@ public class StatsGen {
 
     List<HourlyResult> hourlyResults = new ArrayList<>();
 
+    void resetTimes() {
+      startTimes.clear();
+      timeOneServerStart = -1d;
+    }
+
     void addResult(Triple<Double, Double, Double> results, Double time) {
       int resIndex = (int) (time / ONE_HOUR);
       if (hourlyResults.size() <= resIndex) {
         hourlyResults.add(new HourlyResult());
       }
       hourlyResults.get(resIndex).addResult(results, time);
+
+      if (results.getLeft() == 1) {
+        timeOneServerStart = time;
+      } else if (timeOneServerStart != -1){
+        timeOneServer += time - timeOneServerStart;
+        timeOneServerStart = -1d;
+      }
+
+      for (Double minVal : MIN_VALS) {
+        // one server so stop the counting
+        if (results.getLeft() == 1 && startTimes.containsKey(minVal)) {
+          if (!totalTimes.containsKey(minVal)) {
+            totalTimes.put(minVal, 0d);
+          }
+
+          totalTimes.put(minVal, totalTimes.get(minVal) + time - startTimes.get(minVal));
+          startTimes.remove(minVal);
+        } else if (results.getLeft() != 1 && results.getMiddle() < minVal && !startTimes.containsKey(minVal)) {
+          startTimes.put(minVal, time);
+        }
+      }
     }
 
     List<String> getStats() {

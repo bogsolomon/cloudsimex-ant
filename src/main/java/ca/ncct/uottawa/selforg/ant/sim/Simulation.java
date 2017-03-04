@@ -4,11 +4,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.ex.IAutoscalingPolicy;
+import org.cloudbus.cloudsim.ex.billing.EC2OnDemandPolicy;
+import org.cloudbus.cloudsim.ex.billing.ExamplePrices;
+import org.cloudbus.cloudsim.ex.billing.GoogleOnDemandPolicy;
+import org.cloudbus.cloudsim.ex.billing.IVmBillingPolicy;
 import org.cloudbus.cloudsim.ex.disk.*;
 import org.cloudbus.cloudsim.ex.util.CustomLog;
 import org.cloudbus.cloudsim.ex.web.*;
 import org.cloudbus.cloudsim.ex.web.workload.StatWorkloadGenerator;
-import org.cloudbus.cloudsim.ex.web.workload.brokers.CompressedAutoscalingPolicy;
 import org.cloudbus.cloudsim.ex.web.workload.brokers.WebBroker;
 import org.cloudbus.cloudsim.ex.web.workload.freq.CompositeValuedSet;
 import org.cloudbus.cloudsim.ex.web.workload.freq.FrequencyFunction;
@@ -56,10 +59,10 @@ public class Simulation {
             String antProperties = basePath.getParent().toString() + "/" + simulationFiles[3].trim();
 
             for (int i = 0; i < 5; i++) {
-                runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimple, "base", i);
+                /*runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimple, "base", i);
                 runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierSimpleAnt, "antSimple", i);
-                runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierHHAnt, "antHH", i);
-                //runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierCompressed, "compressed", i);
+                runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierHHAnt, "antHH", i);*/
+                runSimulation(simName, cloudProperties, workloadProperties, outputProperties, antProperties, supplierCompressed, "compressed", i);
             }
         }
     }
@@ -95,8 +98,10 @@ public class Simulation {
 
         Datacenter datacenter0 = createDatacenter("Datacenter_0", intfromProps(cloudProps, "hostCount"));
 
+        IVmBillingPolicy ec2USBilling = new EC2OnDemandPolicy(ExamplePrices.EC2_NIX_OS_PRICES_VIRGINIA);
         WebBroker broker = new WebBroker("Broker", refreshTime,
                 intfromProps(workloadProps, "simTime") * 24 * 3600, 1, 1, datacenter0.getId());
+        broker.setVMBillingPolicy(ec2USBilling);
         // Step 4: Create virtual machines
         List<Vm> vmlist = getVms(broker, intfromProps(cloudProps, "vmCount"));
 

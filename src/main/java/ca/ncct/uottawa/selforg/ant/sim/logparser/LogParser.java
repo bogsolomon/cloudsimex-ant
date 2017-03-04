@@ -38,13 +38,37 @@ public class LogParser {
         List<String> lines = Files.readAllLines(path);
         List<String> outputLines = new ArrayList<>();
 
-        List<String> scale = lines.stream().filter(l -> (l.contains("Simple-Autoscale") || l.contains("Ant-Autoscale"))
+        List<String> scale = lines.stream().filter(l -> (l.contains("Simple-Autoscale") || l.contains("Ant-Autoscale")
+                || l.contains("Compressed-Autoscale"))
                 && !l.contains("Scale-Up") && !l.contains("Scale-Down") && !l.contains("actuating"))
                 .collect(Collectors.toList());
 
         outputLines.add("Time,Servers,AverageCPU,Sessions,Pheromone");
         scale.forEach(x -> outputLines.add(parseLine(x)));
         Files.write(outPath, outputLines, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+
+        String firstLine = lines.stream().filter(x -> x.contains("IdealEnd")).findFirst().get();
+        int firstLineIdx = lines.indexOf(firstLine);
+
+        List<String> results = lines.subList(firstLineIdx + 1, lines.size());
+        double maxDelay = 0;
+        double avgDelay = 0;
+
+        for (String line : results) {
+            String[] lineSplit = line.split(";");
+            Double delay = Double.parseDouble(lineSplit[6].trim());
+            maxDelay = Math.max(delay, maxDelay);
+            avgDelay += delay;
+        }
+
+        Path outPath2 = path.getParent().resolve(basename + ".stats3");
+        List<String> outputLines2 = new ArrayList<>();
+        outputLines2.add("Total sessions: " + results.size());
+        outputLines2.add("Total delay: "+ avgDelay);
+        outputLines2.add("Avg delay: "+ avgDelay / results.size());
+        outputLines2.add("Max delay: "+ maxDelay);
+
+        Files.write(outPath2, outputLines2, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 
     private static String parseLine(String line) {
